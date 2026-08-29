@@ -18,8 +18,8 @@ class MoneyRequestCreate(BaseModel):
         # WHY: a negative request amount would invert the transfer direction
         if value <= 0 or value > settings.MAX_REQUEST_AMOUNT:
             raise ValueError(f"Amount must be > 0 and <= {settings.MAX_REQUEST_AMOUNT}.")
-        if value % 1 != 0 or value.as_tuple().exponent < 0:
-            raise ValueError("Amount must be a full integer (decimals and floating points are not allowed).")
+        if value % 1 != 0:
+            raise ValueError("Amount must be a whole number (no fractional cents/decimals).")
         return value
 
 

@@ -17,9 +17,9 @@ class TransferRequest(BaseModel):
     @classmethod
     def amount_must_be_positive_integer(cls, value: Decimal) -> Decimal:
         if value <= 0:
-            raise ValueError("Amount must be a positive integer.")
-        if value % 1 != 0 or value.as_tuple().exponent < 0:
-            raise ValueError("Amount must be a full integer (decimals and floating points are not allowed).")
+            raise ValueError("Amount must be a positive number.")
+        if value % 1 != 0:
+            raise ValueError("Amount must be a whole number (no fractional cents/decimals).")
         return value
 
 
