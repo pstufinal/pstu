@@ -19,10 +19,10 @@ class MoneyRequest(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     requester_user_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("users.id"), nullable=False
+        Integer, ForeignKey("users.id"), nullable=False, index=True
     )
     payer_user_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("users.id"), nullable=False
+        Integer, ForeignKey("users.id"), nullable=False, index=True
     )
     # Why NUMERIC: same as everywhere else — exact decimal, no float.
     amount_bdt: Mapped[Decimal] = mapped_column(Numeric(15, 2), nullable=False)

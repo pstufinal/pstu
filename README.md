@@ -82,16 +82,16 @@ Every transfer writes **three rows**:
 
 ## Scaling to 10M Users in 3 Years
 
-For a 6-hour build, we chose a **single PostgreSQL monolith on purpose** — it gives us ACID guarantees with zero operational overhead. Here is how we would scale:
+For a 6-hour build, we chose a **single PostgreSQL monolith on purpose** — it gives us ACID guarantees with zero operational overhead. Here is our exact 4-phase scaling plan:
 
-| Stage | Users | Strategy |
-|-------|-------|----------|
-| Now | < 10K | Single PG, vertical scaling |
-| Year 1 | 100K–1M | **Read replicas** for `/transactions/history`, connection pooler (PgBouncer) |
-| Year 2 | 1M–5M | **Shard wallets and ledger by user_id** (Citus or manual hash partitioning). Each shard owns a range of wallet IDs; transfers across shards use 2PC or saga. |
-| Year 3 | 5M–10M | **Queue non-critical events** (notifications, analytics) via message broker. Hot wallets (merchants) get dedicated shard capacity. |
+*   **Phase 0 (today):** monolith + row locks + pooling.
+*   **Phase 1:** read replicas.
+*   **Phase 2:** shard wallets/ledger by user_id + monthly partitions.
+*   **Phase 3:** async queue for notifications ONLY.
 
-**Why not start with sharding?** Premature distribution trades ACID for eventual consistency. At 10K users, a single PG instance on a 4-core VM handles thousands of TPS. We'd be solving a problem we don't have yet — and introducing distributed transaction bugs we can't debug in 6 hours.
+Phases 2-3 were not built today because a correct monolith beats a broken distributed system.
+
+(For full details, see [`docs/SCALING_STRATEGY.md`](docs/SCALING_STRATEGY.md) and check the `/scaling/metrics` endpoint).
 
 ---
 

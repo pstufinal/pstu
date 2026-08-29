@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, Header, HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.security import get_current_user
-from app.database import get_db
+from app.database import get_db, get_read_db
 from app.models.transaction import LedgerEntry
 from app.models.user import User
 from app.models.wallet import Wallet
@@ -39,7 +39,7 @@ def send_money(
 @router.get("/wallets/me")
 def get_my_balance(
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_read_db),
 ):
     """Return the current user's wallet balance."""
     wallet = db.query(Wallet).filter_by(user_id=current_user.id).first()
@@ -54,7 +54,7 @@ def get_my_balance(
 @router.get("/transactions/history")
 def get_transaction_history(
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_read_db),
 ):
     """Return all ledger entries for the current user's wallet, newest first."""
     wallet = db.query(Wallet).filter_by(user_id=current_user.id).first()

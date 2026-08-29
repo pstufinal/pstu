@@ -17,6 +17,7 @@ import pytest
 
 from app.core.security import hash_password
 from app.database import Base, SessionLocal, engine
+from app.models.transaction import IdempotencyRecord, LedgerEntry, Transaction
 from app.models.user import User
 from app.models.wallet import Wallet
 from app.services.transfer_service import execute_transfer
@@ -71,6 +72,23 @@ def test_concurrent_transfers_conserve_money():
     # ── Setup: fresh users that don't collide with manual curl tests ──────────
     setup_db = SessionLocal()
     try:
+        # Clean up any leftover test users
+        users_to_delete = setup_db.query(User).filter(User.username.in_([ALICE_USERNAME, BOB_USERNAME])).all()
+        user_ids = [u.id for u in users_to_delete]
+        if user_ids:
+            wallets = setup_db.query(Wallet).filter(Wallet.user_id.in_(user_ids)).all()
+            wallet_ids = [w.id for w in wallets]
+            if wallet_ids:
+                setup_db.query(LedgerEntry).filter(LedgerEntry.wallet_id.in_(wallet_ids)).delete(synchronize_session=False)
+                setup_db.query(Transaction).filter(
+                    (Transaction.sender_wallet_id.in_(wallet_ids)) | 
+                    (Transaction.recipient_wallet_id.in_(wallet_ids))
+                ).delete(synchronize_session=False)
+                setup_db.query(Wallet).filter(Wallet.id.in_(wallet_ids)).delete(synchronize_session=False)
+            setup_db.query(IdempotencyRecord).filter(IdempotencyRecord.user_id.in_(user_ids)).delete(synchronize_session=False)
+            setup_db.query(User).filter(User.id.in_(user_ids)).delete(synchronize_session=False)
+        setup_db.commit()
+
         alice_id = _create_user_with_wallet(setup_db, alice_username)
         bob_id = _create_user_with_wallet(setup_db, bob_username)
         setup_db.commit()
