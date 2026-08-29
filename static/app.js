@@ -34,11 +34,15 @@ const btnLogout = document.getElementById('btn-logout');
 const formSend = document.getElementById('form-send');
 const formRequest = document.getElementById('form-request');
 const tabReqForm = document.getElementById('tab-req-form');
-const tabReqList = document.getElementById('tab-req-list');
+const tabReqIncoming = document.getElementById('tab-req-incoming');
+const tabReqOutgoing = document.getElementById('tab-req-outgoing');
 const panelReqForm = document.getElementById('panel-req-form');
-const panelReqList = document.getElementById('panel-req-list');
+const panelReqIncoming = document.getElementById('panel-req-incoming');
+const panelReqOutgoing = document.getElementById('panel-req-outgoing');
 const containerIncoming = document.getElementById('container-incoming-requests');
+const containerOutgoing = document.getElementById('container-outgoing-requests');
 const incomingCountBadge = document.getElementById('incoming-count-badge');
+const outgoingCountBadge = document.getElementById('outgoing-count-badge');
 const btnRefreshRequests = document.getElementById('btn-refresh-requests');
 
 // Inbox Drawer Elements
@@ -387,7 +391,9 @@ formRequest.addEventListener('submit', async (e) => {
         if (res) {
             showToast(`Requested ৳${formatIntegerAmount(res.amount_bdt)} BDT from ${res.payer}!`, 'success');
             formRequest.reset();
-            refreshRequests();
+            await refreshRequests();
+            // Automatically switch to Sent Requests tab so the user sees it
+            switchToTab('outgoing');
         }
     } catch (e) {
     } finally {
@@ -401,6 +407,7 @@ async function refreshRequests() {
         const res = await apiCall('/money-requests', {}, true);
         if (!res) return;
 
+        // 1. Incoming Requests (To Pay)
         const incoming = res.incoming || [];
         const pendingIncoming = incoming.filter(r => r.status === 'pending');
         incomingCountBadge.textContent = pendingIncoming.length;
@@ -417,6 +424,7 @@ async function refreshRequests() {
                             <span class="text-xs font-mono font-bold text-accent-400">৳${formatIntegerAmount(r.amount_bdt)}</span>
                         </div>
                         ${r.note ? `<p class="text-[10px] text-[#a1a1aa] mt-0.5">"${escapeHtml(r.note)}"</p>` : ''}
+                        <span class="text-[10px] text-[#71717a] block mt-1">${formatTime(r.created_at)}</span>
                     </div>
 
                     <div class="flex items-center space-x-1.5 shrink-0">
@@ -429,6 +437,40 @@ async function refreshRequests() {
                     </div>
                 </div>
             `).join('');
+        }
+
+        // 2. Outgoing Requests (Sent by me)
+        const outgoing = res.outgoing || [];
+        outgoingCountBadge.textContent = outgoing.length;
+
+        if (outgoing.length === 0) {
+            containerOutgoing.innerHTML = `<div class="text-center py-8 text-[#71717a] text-xs">No sent requests created yet.</div>`;
+        } else {
+            containerOutgoing.innerHTML = outgoing.map(r => {
+                let statusBadge = `<span class="px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 font-bold text-[10px] border border-amber-500/20">PENDING</span>`;
+                if (r.status === 'approved') {
+                    statusBadge = `<span class="px-2 py-0.5 rounded bg-accent-500/10 text-accent-400 font-bold text-[10px] border border-accent-500/20">PAID</span>`;
+                } else if (r.status === 'rejected') {
+                    statusBadge = `<span class="px-2 py-0.5 rounded bg-rose-500/10 text-rose-300 font-bold text-[10px] border border-rose-500/20">REJECTED</span>`;
+                }
+
+                return `
+                    <div class="p-3 rounded-2xl bg-[#0c0e11] border border-[#242830] flex items-center justify-between space-x-3 fade-in">
+                        <div>
+                            <div class="flex items-center space-x-1.5">
+                                <span class="text-xs font-bold text-white">To: ${escapeHtml(r.payer_username)}</span>
+                                <span class="text-xs font-mono font-bold text-[#d4d4d8]">৳${formatIntegerAmount(r.amount_bdt)}</span>
+                            </div>
+                            ${r.note ? `<p class="text-[10px] text-[#a1a1aa] mt-0.5">"${escapeHtml(r.note)}"</p>` : ''}
+                            <span class="text-[10px] text-[#71717a] block mt-1">${formatTime(r.created_at)}</span>
+                        </div>
+
+                        <div class="shrink-0">
+                            ${statusBadge}
+                        </div>
+                    </div>
+                `;
+            }).join('');
         }
     } catch (e) {}
 }
@@ -463,20 +505,31 @@ btnRefreshRequests.addEventListener('click', () => {
     showToast('Requests refreshed.');
 });
 
-// Tab switching between Request Form and Pending Requests list
-tabReqForm.addEventListener('click', () => {
-    tabReqForm.className = 'text-white border-b-2 border-accent-400 pb-1';
-    tabReqList.className = 'text-[#71717a] hover:text-white pb-1 transition-colors';
-    panelReqForm.classList.remove('hidden');
-    panelReqList.classList.add('hidden');
-});
-
-tabReqList.addEventListener('click', () => {
-    tabReqList.className = 'text-white border-b-2 border-accent-400 pb-1';
+// 3-Way Tab Switching Helper
+function switchToTab(tabName) {
     tabReqForm.className = 'text-[#71717a] hover:text-white pb-1 transition-colors';
-    panelReqList.classList.remove('hidden');
+    tabReqIncoming.className = 'text-[#71717a] hover:text-white pb-1 transition-colors';
+    tabReqOutgoing.className = 'text-[#71717a] hover:text-white pb-1 transition-colors';
+
     panelReqForm.classList.add('hidden');
-});
+    panelReqIncoming.classList.add('hidden');
+    panelReqOutgoing.classList.add('hidden');
+
+    if (tabName === 'form') {
+        tabReqForm.className = 'text-white border-b-2 border-accent-400 pb-1';
+        panelReqForm.classList.remove('hidden');
+    } else if (tabName === 'incoming') {
+        tabReqIncoming.className = 'text-white border-b-2 border-accent-400 pb-1';
+        panelReqIncoming.classList.remove('hidden');
+    } else if (tabName === 'outgoing') {
+        tabReqOutgoing.className = 'text-white border-b-2 border-accent-400 pb-1';
+        panelReqOutgoing.classList.remove('hidden');
+    }
+}
+
+tabReqForm.addEventListener('click', () => switchToTab('form'));
+tabReqIncoming.addEventListener('click', () => switchToTab('incoming'));
+tabReqOutgoing.addEventListener('click', () => switchToTab('outgoing'));
 
 // ── Transaction Inbox System ───────────────────────────────────────────────
 function triggerNewInboxNotification() {

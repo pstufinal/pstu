@@ -232,14 +232,17 @@
                 <!-- Right: Receive / Request Money & Pending Requests -->
                 <div class="bg-[#15181d] border border-[#262b33] rounded-3xl p-6 shadow-xl flex flex-col justify-between">
                     <div>
-                        <!-- Tabs for Request New vs View Pending -->
+                        <!-- Tabs for Request New vs Incoming to Pay vs Sent Requests -->
                         <div class="flex items-center justify-between mb-4 pb-3 border-b border-[#242830]">
                             <div class="flex space-x-3 text-xs font-bold">
                                 <button id="tab-req-form" class="text-white border-b-2 border-accent-400 pb-1">
-                                    Request Money
+                                    Request
                                 </button>
-                                <button id="tab-req-list" class="text-[#71717a] hover:text-white pb-1 transition-colors">
-                                    Pending (<span id="incoming-count-badge">0</span>)
+                                <button id="tab-req-incoming" class="text-[#71717a] hover:text-white pb-1 transition-colors">
+                                    To Pay (<span id="incoming-count-badge">0</span>)
+                                </button>
+                                <button id="tab-req-outgoing" class="text-[#71717a] hover:text-white pb-1 transition-colors">
+                                    Sent Requests (<span id="outgoing-count-badge">0</span>)
                                 </button>
                             </div>
                             <button id="btn-refresh-requests" class="text-xs text-[#a1a1aa] hover:text-white p-1 rounded-lg bg-[#1e2229] transition">
@@ -278,10 +281,17 @@
                             </form>
                         </div>
 
-                        <!-- 2. Pending Requests List Panel -->
-                        <div id="panel-req-list" class="hidden space-y-2.5 max-h-64 overflow-y-auto pr-1">
+                        <!-- 2. Incoming Requests List Panel (To Pay) -->
+                        <div id="panel-req-incoming" class="hidden space-y-2.5 max-h-64 overflow-y-auto pr-1">
                             <div id="container-incoming-requests" class="space-y-2">
                                 <div class="text-center py-8 text-[#71717a] text-xs">No pending requests to pay.</div>
+                            </div>
+                        </div>
+
+                        <!-- 3. Outgoing Requests List Panel (Sent Requests) -->
+                        <div id="panel-req-outgoing" class="hidden space-y-2.5 max-h-64 overflow-y-auto pr-1">
+                            <div id="container-outgoing-requests" class="space-y-2">
+                                <div class="text-center py-8 text-[#71717a] text-xs">No sent requests created yet.</div>
                             </div>
                         </div>
                     </div>
