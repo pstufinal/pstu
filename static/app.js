@@ -548,6 +548,17 @@ async function runReconciliationAudit() {
             auditBadge.textContent = 'DISCREPANCY';
             auditDiff.className = 'text-rose-400 font-bold';
         }
+
+        // Fetch scaling metrics
+        try {
+            const metrics = await apiCall('/scaling/metrics', {}, true);
+            if (metrics && metrics.connections) {
+                const poolStatus = document.getElementById('db-pool-status');
+                if (poolStatus) {
+                    poolStatus.textContent = `${metrics.connections.current_active}/${metrics.connections.max_allowed} (${metrics.connections.utilization_percent}%)`;
+                }
+            }
+        } catch (e) {}
     } catch (e) {}
 }
 btnRunReconciliation.addEventListener('click', async () => {
