@@ -15,9 +15,11 @@ class TransferRequest(BaseModel):
 
     @field_validator("amount_bdt")
     @classmethod
-    def amount_must_be_positive(cls, value: Decimal) -> Decimal:
+    def amount_must_be_positive_and_valid_decimal(cls, value: Decimal) -> Decimal:
         if value <= 0:
             raise ValueError("Amount must be positive.")
+        if value.as_tuple().exponent < -2:
+            raise ValueError("Amount cannot have more than 2 decimal places.")
         return value
 
 

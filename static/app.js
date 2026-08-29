@@ -216,14 +216,25 @@ tabRegister.addEventListener('click', () => {
 
 btnLogout.addEventListener('click', logout);
 
-// ── Quick Presets ──────────────────────────────────────────────────────────
-window.setSendAmount = function(val) {
-    document.getElementById('send-amount').value = val.toFixed(2);
-};
-
-window.setRequestAmount = function(val) {
-    document.getElementById('req-amount').value = val.toFixed(2);
-};
+// ── Decimal Validation Helper (No Floating Point Drift) ────────────────────
+function parseExactDecimal(valStr) {
+    if (!valStr) return null;
+    const clean = valStr.trim();
+    // Strict regex: integer or integer with 1-2 decimal digits only
+    if (!/^[0-9]+(\.[0-9]{1,2})?$/.test(clean)) {
+        return null;
+    }
+    // Disallow zero amount
+    if (/^0+(\.0+)?$/.test(clean)) {
+        return null;
+    }
+    // Normalize to exact 2 decimal places as string
+    if (!clean.includes('.')) {
+        return `${clean}.00`;
+    }
+    const [intPart, decPart] = clean.split('.');
+    return `${intPart}.${decPart.padEnd(2, '0')}`;
+}
 
 // ── Dashboard Operations ───────────────────────────────────────────────────
 async function loadDashboardData() {
@@ -265,25 +276,31 @@ async function refreshBalance() {
                 maximumFractionDigits: 2
             });
             dashBalance.textContent = `৳ ${formatted}`;
-            return parseFloat(res.balance_bdt);
+            return res.balance_bdt;
         }
     } catch (e) {}
-    return 0;
+    return "0.00";
 }
 btnRefreshBalance.addEventListener('click', () => {
     refreshBalance();
     showToast('Balance updated.');
 });
 
-// 2. Send Money
+// 2. Send Money (Exact Decimal Arithmetic)
 formSend.addEventListener('submit', async (e) => {
     e.preventDefault();
     const recipient = document.getElementById('send-recipient').value.trim();
-    const amount = parseFloat(document.getElementById('send-amount').value);
+    const rawAmount = document.getElementById('send-amount').value;
+    const decimalAmount = parseExactDecimal(rawAmount);
     const note = document.getElementById('send-note').value.trim() || null;
 
-    if (!recipient || isNaN(amount) || amount <= 0) {
-        showToast('Please provide a valid recipient and positive amount.', 'error');
+    if (!recipient) {
+        showToast('Please enter a recipient username.', 'error');
+        return;
+    }
+
+    if (!decimalAmount) {
+        showToast('Please enter a valid positive decimal amount (e.g. 2500.00, max 2 decimals).', 'error');
         return;
     }
 
@@ -300,7 +317,7 @@ formSend.addEventListener('submit', async (e) => {
             },
             body: JSON.stringify({
                 recipient_username: recipient,
-                amount_bdt: amount.toFixed(2),
+                amount_bdt: decimalAmount,
                 note
             })
         });
@@ -318,15 +335,21 @@ formSend.addEventListener('submit', async (e) => {
     }
 });
 
-// 3. Request Money
+// 3. Request Money (Exact Decimal Arithmetic)
 formRequest.addEventListener('submit', async (e) => {
     e.preventDefault();
     const payer = document.getElementById('req-payer').value.trim();
-    const amount = parseFloat(document.getElementById('req-amount').value);
+    const rawAmount = document.getElementById('req-amount').value;
+    const decimalAmount = parseExactDecimal(rawAmount);
     const note = document.getElementById('req-note').value.trim() || null;
 
-    if (!payer || isNaN(amount) || amount <= 0) {
-        showToast('Please provide a valid payer username and positive amount.', 'error');
+    if (!payer) {
+        showToast('Please enter a payer username.', 'error');
+        return;
+    }
+
+    if (!decimalAmount) {
+        showToast('Please enter a valid positive decimal amount (e.g. 1200.00, max 2 decimals).', 'error');
         return;
     }
 
@@ -338,7 +361,7 @@ formRequest.addEventListener('submit', async (e) => {
             method: 'POST',
             body: JSON.stringify({
                 payer_username: payer,
-                amount_bdt: amount.toFixed(2),
+                amount_bdt: decimalAmount,
                 note
             })
         });
