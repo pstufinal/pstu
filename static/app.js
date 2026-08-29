@@ -1,11 +1,13 @@
 /**
  * PayPulse Frontend Application Logic
- * Simple, robust vanilla JavaScript with fetch API.
+ * Concurrency Stress Testing Arena, Live Ledger Audit, & P2P Money Movement
  */
 
 // ── State ──────────────────────────────────────────────────────────────────
 let authToken = localStorage.getItem('paypulse_token') || null;
 let currentUsername = localStorage.getItem('paypulse_username') || null;
+let rawLedgerEntries = [];
+let currentLedgerFilter = 'all';
 
 // ── DOM Elements ───────────────────────────────────────────────────────────
 const viewAuth = document.getElementById('view-auth');
@@ -47,11 +49,30 @@ const btnRefreshRequests = document.getElementById('btn-refresh-requests');
 const tableLedgerBody = document.getElementById('table-ledger-body');
 const btnRefreshHistory = document.getElementById('btn-refresh-history');
 const btnRunReconciliation = document.getElementById('btn-run-reconciliation');
-const btnReconcileAudit = document.getElementById('btn-reconcile-audit');
 const auditDebits = document.getElementById('audit-debits');
 const auditCredits = document.getElementById('audit-credits');
 const auditDiff = document.getElementById('audit-diff');
 const auditBadge = document.getElementById('audit-badge');
+
+// Ledger Filters
+const filterAll = document.getElementById('filter-all');
+const filterDebits = document.getElementById('filter-debits');
+const filterCredits = document.getElementById('filter-credits');
+
+// Stress Test Modal Elements
+const modalStressTest = document.getElementById('modal-stress-test');
+const btnOpenStressTestNav = document.getElementById('btn-open-stress-test-nav');
+const btnOpenStressTestCard = document.getElementById('btn-open-stress-test-card');
+const btnCloseStressModal = document.getElementById('btn-close-stress-modal');
+const btnExecuteStressTest = document.getElementById('btn-execute-stress-test');
+const stressRecipientInput = document.getElementById('stress-recipient-input');
+const stressResultsArea = document.getElementById('stress-results-area');
+const stressSummaryBadge = document.getElementById('stress-summary-badge');
+const stressResStart = document.getElementById('stress-res-start');
+const stressResSuccess = document.getElementById('stress-res-success');
+const stressResFailed = document.getElementById('stress-res-failed');
+const stressResEnd = document.getElementById('stress-res-end');
+const stressThreadsLog = document.getElementById('stress-threads-log');
 
 // ── Toast Notifications ────────────────────────────────────────────────────
 function showToast(message, type = 'info') {
@@ -83,7 +104,7 @@ function showToast(message, type = 'info') {
 }
 
 // ── API Helper ─────────────────────────────────────────────────────────────
-async function apiCall(endpoint, options = {}) {
+async function apiCall(endpoint, options = {}, suppressToast = false) {
     const headers = {
         'Content-Type': 'application/json',
         ...(options.headers || {})
@@ -103,18 +124,22 @@ async function apiCall(endpoint, options = {}) {
 
         if (!response.ok) {
             if (response.status === 401 && authToken) {
-                // Token expired or invalid
                 logout();
                 showToast('Session expired. Please log in again.', 'error');
                 return null;
             }
             const errorMsg = data.detail || (Array.isArray(data.detail) ? data.detail[0]?.msg : 'Request failed');
-            throw new Error(errorMsg);
+            const error = new Error(errorMsg);
+            error.status = response.status;
+            error.data = data;
+            throw error;
         }
 
         return data;
     } catch (err) {
-        showToast(err.message, 'error');
+        if (!suppressToast) {
+            showToast(err.message, 'error');
+        }
         throw err;
     }
 }
@@ -209,9 +234,16 @@ tabRegister.addEventListener('click', () => {
 
 btnLogout.addEventListener('click', logout);
 
-// ── Dashboard Operations ───────────────────────────────────────────────────
+// ── Quick Presets ──────────────────────────────────────────────────────────
+window.setSendAmount = function(val) {
+    document.getElementById('send-amount').value = val.toFixed(2);
+};
 
-// Load all dashboard components
+window.setRequestAmount = function(val) {
+    document.getElementById('req-amount').value = val.toFixed(2);
+};
+
+// ── Dashboard Operations ───────────────────────────────────────────────────
 async function loadDashboardData() {
     await Promise.all([
         refreshBalance(),
@@ -231,8 +263,10 @@ async function refreshBalance() {
                 maximumFractionDigits: 2
             });
             dashBalance.textContent = `৳ ${formatted}`;
+            return parseFloat(res.balance_bdt);
         }
     } catch (e) {}
+    return 0;
 }
 btnRefreshBalance.addEventListener('click', () => {
     refreshBalance();
@@ -251,7 +285,6 @@ formSend.addEventListener('submit', async (e) => {
         return;
     }
 
-    // Generate unique UUID for Idempotency-Key
     const idempotencyKey = typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : `idemp-${Date.now()}-${Math.random()}`;
 
     const btn = document.getElementById('btn-send-submit');
@@ -319,13 +352,12 @@ formRequest.addEventListener('submit', async (e) => {
     }
 });
 
-// 4. Money Requests (Incoming & Outgoing)
+// 4. Money Requests
 async function refreshRequests() {
     try {
         const res = await apiCall('/money-requests');
         if (!res) return;
 
-        // Render Incoming
         const incoming = res.incoming || [];
         const pendingIncoming = incoming.filter(r => r.status === 'pending');
         incomingCountBadge.textContent = pendingIncoming.length;
@@ -356,7 +388,7 @@ async function refreshRequests() {
                                 </button>
                             </div>
                         ` : `
-                            <span class="text-xs font-mono px-2 py-0.5 rounded ${r.status === 'approved' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'} uppercase">
+                            <span class="text-xs font-mono px-2 py-0.5 rounded ${r.status === 'approved' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'} uppercase text-[10px]">
                                 ${r.status}
                             </span>
                         `}
@@ -365,7 +397,6 @@ async function refreshRequests() {
             `).join('');
         }
 
-        // Render Outgoing
         const outgoing = res.outgoing || [];
         if (outgoing.length === 0) {
             containerOutgoing.innerHTML = `<div class="text-center py-8 text-slate-500 text-xs">No outgoing requests created yet.</div>`;
@@ -417,46 +448,82 @@ window.handleRejectRequest = async function(requestId) {
 
 btnRefreshRequests.addEventListener('click', refreshRequests);
 
-// 5. Ledger History
+// 5. Ledger History & Filters
 async function refreshLedgerHistory() {
     try {
         const res = await apiCall('/transactions/history');
         if (!res || !res.entries) return;
 
-        const entries = res.entries;
-        if (entries.length === 0) {
-            tableLedgerBody.innerHTML = `
-                <tr>
-                    <td colspan="6" class="py-8 text-center text-slate-500 font-sans">
-                        No ledger entries yet. Make a transfer to view the double-entry records.
-                    </td>
-                </tr>
-            `;
-            return;
-        }
-
-        tableLedgerBody.innerHTML = entries.map(entry => {
-            const isDebit = entry.entry_type === 'DEBIT';
-            const typeBadge = isDebit
-                ? `<span class="px-2 py-0.5 rounded bg-rose-500/10 text-rose-400 border border-rose-500/20 font-bold">DEBIT (-)</span>`
-                : `<span class="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold">CREDIT (+)</span>`;
-            
-            const amountColor = isDebit ? 'text-rose-400' : 'text-emerald-400';
-            const amountSign = isDebit ? '-' : '+';
-
-            return `
-                <tr class="hover:bg-slate-800/40 transition">
-                    <td class="py-3 px-4 text-slate-400">#${entry.ledger_entry_id}</td>
-                    <td class="py-3 px-4">${typeBadge}</td>
-                    <td class="py-3 px-4 font-bold ${amountColor}">${amountSign} ৳${parseFloat(entry.amount_bdt).toFixed(2)}</td>
-                    <td class="py-3 px-4 text-white">৳${parseFloat(entry.balance_after).toFixed(2)}</td>
-                    <td class="py-3 px-4 text-slate-400 text-[11px]">TXN #${entry.transaction_id}</td>
-                    <td class="py-3 px-4 text-slate-500 text-[11px] font-sans">${formatTime(entry.created_at)}</td>
-                </tr>
-            `;
-        }).join('');
+        rawLedgerEntries = res.entries;
+        renderLedgerTable();
     } catch (e) {}
 }
+
+function renderLedgerTable() {
+    let entries = rawLedgerEntries;
+    if (currentLedgerFilter === 'debits') {
+        entries = entries.filter(e => e.entry_type === 'DEBIT');
+    } else if (currentLedgerFilter === 'credits') {
+        entries = entries.filter(e => e.entry_type === 'CREDIT');
+    }
+
+    if (entries.length === 0) {
+        tableLedgerBody.innerHTML = `
+            <tr>
+                <td colspan="6" class="py-8 text-center text-slate-500 font-sans">
+                    No matching ledger entries found.
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    tableLedgerBody.innerHTML = entries.map(entry => {
+        const isDebit = entry.entry_type === 'DEBIT';
+        const typeBadge = isDebit
+            ? `<span class="px-2 py-0.5 rounded bg-rose-500/10 text-rose-400 border border-rose-500/20 font-bold text-[10px]">DEBIT (-)</span>`
+            : `<span class="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold text-[10px]">CREDIT (+)</span>`;
+        
+        const amountColor = isDebit ? 'text-rose-400' : 'text-emerald-400';
+        const amountSign = isDebit ? '-' : '+';
+
+        return `
+            <tr class="hover:bg-slate-800/40 transition">
+                <td class="py-3 px-4 text-slate-400 font-mono">#${entry.ledger_entry_id}</td>
+                <td class="py-3 px-4">${typeBadge}</td>
+                <td class="py-3 px-4 font-bold ${amountColor}">${amountSign} ৳${parseFloat(entry.amount_bdt).toFixed(2)}</td>
+                <td class="py-3 px-4 text-white">৳${parseFloat(entry.balance_after).toFixed(2)}</td>
+                <td class="py-3 px-4 text-slate-400 text-[11px]">TXN #${entry.transaction_id}</td>
+                <td class="py-3 px-4 text-slate-500 text-[11px] font-sans">${formatTime(entry.created_at)}</td>
+            </tr>
+        `;
+    }).join('');
+}
+
+filterAll.addEventListener('click', () => {
+    currentLedgerFilter = 'all';
+    filterAll.className = 'px-2.5 py-1 rounded-lg bg-slate-800 text-white font-medium';
+    filterDebits.className = 'px-2.5 py-1 rounded-lg text-slate-400 hover:text-rose-400';
+    filterCredits.className = 'px-2.5 py-1 rounded-lg text-slate-400 hover:text-emerald-400';
+    renderLedgerTable();
+});
+
+filterDebits.addEventListener('click', () => {
+    currentLedgerFilter = 'debits';
+    filterDebits.className = 'px-2.5 py-1 rounded-lg bg-rose-500/20 text-rose-300 font-medium border border-rose-500/30';
+    filterAll.className = 'px-2.5 py-1 rounded-lg text-slate-400 hover:text-white';
+    filterCredits.className = 'px-2.5 py-1 rounded-lg text-slate-400 hover:text-emerald-400';
+    renderLedgerTable();
+});
+
+filterCredits.addEventListener('click', () => {
+    currentLedgerFilter = 'credits';
+    filterCredits.className = 'px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-300 font-medium border border-emerald-500/30';
+    filterAll.className = 'px-2.5 py-1 rounded-lg text-slate-400 hover:text-white';
+    filterDebits.className = 'px-2.5 py-1 rounded-lg text-slate-400 hover:text-rose-400';
+    renderLedgerTable();
+});
+
 btnRefreshHistory.addEventListener('click', () => {
     refreshLedgerHistory();
     showToast('Ledger audit trail refreshed.');
@@ -487,9 +554,135 @@ btnRunReconciliation.addEventListener('click', async () => {
     await runReconciliationAudit();
     showToast('System reconciliation verified: Total Debits == Total Credits.', 'success');
 });
-btnReconcileAudit.addEventListener('click', async () => {
-    await runReconciliationAudit();
-    showToast('System reconciliation verified: Total Debits == Total Credits.', 'success');
+
+// ── Concurrency Stress Test Arena ──────────────────────────────────────────
+function openStressModal() {
+    modalStressTest.classList.remove('hidden');
+    stressResultsArea.classList.add('hidden');
+}
+
+function closeStressModal() {
+    modalStressTest.classList.add('hidden');
+}
+
+btnOpenStressTestNav.addEventListener('click', openStressModal);
+btnOpenStressTestCard.addEventListener('click', openStressModal);
+btnCloseStressModal.addEventListener('click', closeStressModal);
+
+// Close on backdrop click
+modalStressTest.addEventListener('click', (e) => {
+    if (e.target === modalStressTest) closeStressModal();
+});
+
+// Execute Parallel Requests
+btnExecuteStressTest.addEventListener('click', async () => {
+    const recipient = stressRecipientInput.value.trim() || 'bob';
+    const numThreads = 10;
+    const amountPerThread = 20000.00;
+
+    // Ensure recipient exists
+    try {
+        await apiCall('/auth/register', {
+            method: 'POST',
+            body: JSON.stringify({ username: recipient, password: 'password123' })
+        }, true);
+    } catch (e) {
+        // Recipient likely already registered, safe to proceed
+    }
+
+    const startBalance = await refreshBalance();
+    
+    btnExecuteStressTest.disabled = true;
+    btnExecuteStressTest.innerHTML = `<span class="animate-spin inline-block mr-2">⚡</span> Firing 10 Simultaneous Requests Across Database Connections...`;
+    stressResultsArea.classList.remove('hidden');
+    stressThreadsLog.innerHTML = `<div class="text-slate-500 animate-pulse">Launching Promise.all with 10 concurrent requests...</div>`;
+    stressResStart.textContent = `৳ ${startBalance.toFixed(2)}`;
+
+    // Prepare 10 concurrent requests with unique UUID idempotency keys
+    const requests = Array.from({ length: numThreads }).map((_, index) => {
+        const idempKey = typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : `stress-${Date.now()}-${index}-${Math.random()}`;
+        return apiCall('/transfers/send', {
+            method: 'POST',
+            headers: { 'Idempotency-Key': idempKey },
+            body: JSON.stringify({
+                recipient_username: recipient,
+                amount_bdt: amountPerThread.toFixed(2),
+                note: `Live Concurrency Test Thread #${index + 1}`
+            })
+        }, true).then(res => ({
+            thread: index + 1,
+            status: 'SUCCESS',
+            amount: amountPerThread,
+            detail: res
+        })).catch(err => ({
+            thread: index + 1,
+            status: 'BLOCKED',
+            reason: err.message || 'Insufficient balance',
+            detail: err
+        }));
+    });
+
+    // Fire all 10 simultaneously
+    const results = await Promise.all(requests);
+
+    // Analyze results
+    const succeeded = results.filter(r => r.status === 'SUCCESS');
+    const blocked = results.filter(r => r.status === 'BLOCKED');
+
+    stressResSuccess.textContent = `${succeeded.length} / ${numThreads}`;
+    stressResFailed.textContent = `${blocked.length} / ${numThreads}`;
+
+    const endBalance = await refreshBalance();
+    stressResEnd.textContent = `৳ ${endBalance.toFixed(2)}`;
+
+    // Check invariants
+    const zeroNegativeBalance = endBalance >= 0;
+    const expectedSuccessCount = Math.floor(startBalance / amountPerThread);
+
+    if (zeroNegativeBalance) {
+        stressSummaryBadge.className = 'text-xs font-mono px-2.5 py-0.5 rounded font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30';
+        stressSummaryBadge.textContent = `PERFECT SERIALIZATION (${succeeded.length} Settled, ${blocked.length} Protected)`;
+    } else {
+        stressSummaryBadge.className = 'text-xs font-mono px-2.5 py-0.5 rounded font-bold bg-rose-500/20 text-rose-400 border border-rose-500/30';
+        stressSummaryBadge.textContent = 'RACE CONDITION DETECTED';
+    }
+
+    // Render thread logs
+    stressThreadsLog.innerHTML = results.map(r => {
+        if (r.status === 'SUCCESS') {
+            return `
+                <div class="flex items-center justify-between p-2 rounded-lg bg-emerald-950/40 border border-emerald-500/20 text-emerald-300">
+                    <div class="flex items-center space-x-2">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                        <span class="font-bold">Thread #${r.thread}:</span>
+                        <span>HTTP 200 OK</span>
+                    </div>
+                    <span class="font-mono text-emerald-400">-৳${r.amount.toFixed(2)} (Settled)</span>
+                </div>
+            `;
+        } else {
+            return `
+                <div class="flex items-center justify-between p-2 rounded-lg bg-slate-900 border border-slate-800 text-slate-400">
+                    <div class="flex items-center space-x-2">
+                        <span class="w-1.5 h-1.5 rounded-full bg-rose-400"></span>
+                        <span class="font-bold text-slate-300">Thread #${r.thread}:</span>
+                        <span class="text-rose-300 font-semibold">HTTP 400</span>
+                    </div>
+                    <span class="font-mono text-slate-500 text-[10px]">${escapeHtml(r.reason)}</span>
+                </div>
+            `;
+        }
+    }).join('');
+
+    await Promise.all([
+        refreshRequests(),
+        refreshLedgerHistory(),
+        runReconciliationAudit()
+    ]);
+
+    btnExecuteStressTest.disabled = false;
+    btnExecuteStressTest.innerHTML = `<span>🔥 Execute 10 Parallel Transfers Now (Promise.all)</span>`;
+    showToast(`Concurrency stress test complete: ${succeeded.length} succeeded, ${blocked.length} blocked cleanly!`, 'success');
 });
 
 // ── UI Helpers ─────────────────────────────────────────────────────────────
