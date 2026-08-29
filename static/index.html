@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PayPulse — Peer-to-Peer Money Movement</title>
+    <title>PayPulse — Peer-to-Peer Payments</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -12,17 +12,33 @@
             theme: {
                 extend: {
                     colors: {
-                        brand: {
-                            50: '#eef2ff',
-                            100: '#e0e7ff',
-                            500: '#6366f1',
-                            600: '#4f46e5',
-                            700: '#4338ca',
-                            900: '#312e81',
+                        stone: {
+                            850: '#1c1917',
+                            900: '#141210',
+                            950: '#0c0a09',
+                        },
+                        cream: {
+                            50: '#faf8f5',
+                            100: '#f5f0eb',
+                            200: '#e8ded4',
+                            300: '#d7c7b8',
+                            400: '#b8a493',
+                            500: '#9c8673',
+                            800: '#2a2622',
+                            900: '#1a1815',
+                            950: '#11100e',
+                        },
+                        accent: {
+                            50: '#ecfdf5',
+                            100: '#d1fae5',
+                            400: '#34d399',
+                            500: '#10b981',
+                            600: '#059669',
+                            700: '#047857',
                         }
                     },
                     fontFamily: {
-                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        sans: ['Plus Jakarta Sans', 'Inter', 'system-ui', 'sans-serif'],
                         mono: ['JetBrains Mono', 'monospace'],
                     }
                 }
@@ -32,386 +48,259 @@
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/style.css">
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans selection:bg-brand-500 selection:text-white">
+<body class="bg-[#0f1113] text-[#e4e4e7] min-h-screen flex flex-col font-sans selection:bg-accent-500 selection:text-white">
 
     <!-- Top Navigation Bar -->
-    <header class="border-b border-slate-800/80 bg-slate-900/60 backdrop-blur-md sticky top-0 z-40">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+    <header class="border-b border-[#24272c] bg-[#14171b]/80 backdrop-blur-md sticky top-0 z-40">
+        <div class="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+            
+            <!-- Logo -->
             <div class="flex items-center space-x-3">
-                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-indigo-400 flex items-center justify-center shadow-lg shadow-brand-500/20">
-                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                <div class="w-9 h-9 rounded-xl bg-accent-500 text-stone-950 flex items-center justify-center font-extrabold shadow-sm shadow-accent-500/20">
+                    <svg class="w-5 h-5 text-stone-950" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z" />
                     </svg>
                 </div>
                 <div>
-                    <span class="text-xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-slate-200 to-indigo-300">PayPulse</span>
-                    <span class="hidden sm:inline-block ml-2 text-xs font-medium px-2 py-0.5 rounded-full bg-brand-500/10 text-brand-400 border border-brand-500/20">PSTU Final</span>
+                    <span class="text-lg font-extrabold tracking-tight text-white">PayPulse</span>
                 </div>
             </div>
 
-            <!-- Header Right State -->
-            <div id="nav-authenticated" class="hidden flex items-center space-x-3">
+            <!-- Top Right: User State -->
+            <div id="nav-authenticated" class="hidden flex items-center space-x-2.5 sm:space-x-3">
                 
-                <!-- Inbox Button with Pop-up (1) Notification Badge -->
-                <button id="btn-toggle-inbox" class="relative flex items-center space-x-1.5 text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-3 py-1.5 rounded-xl transition-all font-medium shadow-sm">
-                    <svg class="w-4 h-4 text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <!-- Inbox Button with Badge -->
+                <button id="btn-toggle-inbox" class="relative flex items-center space-x-1.5 text-xs bg-[#1a1e24] hover:bg-[#222730] text-[#d4d4d8] border border-[#2b303b] px-3 py-2 rounded-xl transition-all font-medium">
+                    <svg class="w-4 h-4 text-accent-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/>
                     </svg>
                     <span>Inbox</span>
-                    <span id="inbox-badge" class="hidden ml-1 px-1.5 py-0.5 rounded-full bg-rose-500 text-white font-bold text-[10px] animate-bounce shadow-md">1</span>
-                </button>
-
-                <!-- Concurrency Demo Button -->
-                <button id="btn-open-stress-test-nav" class="flex items-center space-x-1.5 text-xs bg-gradient-to-r from-amber-500/10 to-orange-500/10 hover:from-amber-500/20 hover:to-orange-500/20 text-amber-300 border border-amber-500/30 px-3 py-1.5 rounded-xl transition-all font-semibold shadow-sm">
-                    <span class="animate-pulse">⚡</span>
-                    <span>Stress Test</span>
+                    <span id="inbox-badge" class="hidden ml-0.5 px-1.5 py-0.2 rounded-full bg-accent-500 text-stone-950 font-bold text-[10px] animate-pulse">1</span>
                 </button>
 
                 <!-- User Identifier -->
-                <div class="flex items-center space-x-2 bg-slate-800/70 border border-slate-700/60 px-3 py-1.5 rounded-xl">
-                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                    <span class="text-xs text-slate-400 hidden sm:inline">User:</span>
-                    <span id="nav-username" class="text-sm font-semibold text-white font-mono"></span>
+                <div class="flex items-center space-x-2 bg-[#1a1e24] border border-[#2b303b] px-3 py-1.5 rounded-xl">
+                    <span class="w-2 h-2 rounded-full bg-accent-400"></span>
+                    <span id="nav-username" class="text-xs font-semibold text-white font-mono"></span>
                 </div>
 
-                <a href="/docs" target="_blank" class="hidden md:flex items-center space-x-1 text-xs text-slate-400 hover:text-white px-2 py-1 transition-colors">
-                    <span>API Docs</span>
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
-                </a>
-                <button id="btn-logout" class="text-xs bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 px-3 py-1.5 rounded-xl transition-colors font-medium">
+                <!-- Logout Button -->
+                <button id="btn-logout" class="text-xs bg-stone-800/60 hover:bg-stone-800 text-[#a1a1aa] hover:text-rose-300 border border-[#2b303b] px-3 py-2 rounded-xl transition-colors font-medium">
                     Logout
                 </button>
             </div>
 
-            <div id="nav-unauthenticated" class="flex items-center space-x-3">
-                <a href="/docs" target="_blank" class="text-xs text-slate-400 hover:text-white px-2 py-1 transition-colors">
-                    Interactive API Docs (/docs)
-                </a>
+            <!-- Unauthenticated Nav -->
+            <div id="nav-unauthenticated" class="flex items-center space-x-2">
+                <span class="text-xs text-[#71717a]">PSTU Hackathon 2026</span>
             </div>
+
         </div>
     </header>
 
     <!-- Toast Notification Container -->
-    <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col space-y-2 max-w-md w-full px-4 pointer-events-none"></div>
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col space-y-2 max-w-sm w-full px-4 pointer-events-none"></div>
 
     <!-- Main Content -->
-    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <main class="flex-1 max-w-4xl w-full mx-auto px-4 sm:px-6 py-8">
 
         <!-- ==================== AUTH VIEW (LOGIN / REGISTER) ==================== -->
-        <section id="view-auth" class="max-w-md mx-auto my-8">
-            <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-6 sm:p-8 shadow-2xl shadow-black/60 relative overflow-hidden backdrop-blur-xl">
-                <div class="absolute -top-24 -right-24 w-48 h-48 bg-brand-500/10 rounded-full blur-3xl pointer-events-none"></div>
+        <section id="view-auth" class="max-w-md mx-auto my-12">
+            <div class="bg-[#15181d] border border-[#262b33] rounded-3xl p-7 sm:p-8 shadow-2xl shadow-black/70">
                 
                 <!-- Auth Tabs -->
-                <div class="flex border-b border-slate-800 mb-6">
-                    <button id="tab-login" class="flex-1 pb-3 text-sm font-semibold text-brand-400 border-b-2 border-brand-500 transition-colors">
+                <div class="flex border-b border-[#262b33] mb-6">
+                    <button id="tab-login" class="flex-1 pb-3 text-sm font-semibold text-accent-400 border-b-2 border-accent-400 transition-colors">
                         Sign In
                     </button>
-                    <button id="tab-register" class="flex-1 pb-3 text-sm font-semibold text-slate-400 hover:text-slate-200 border-b-2 border-transparent transition-colors">
+                    <button id="tab-register" class="flex-1 pb-3 text-sm font-semibold text-[#71717a] hover:text-[#d4d4d8] border-b-2 border-transparent transition-colors">
                         Create Account
                     </button>
-                </div>
-
-                <!-- Auto-fund notice -->
-                <div class="mb-5 p-3 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-start space-x-2.5">
-                    <svg class="w-5 h-5 text-indigo-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <p class="text-xs text-indigo-200/90 leading-relaxed">
-                        Every registered user receives a closed-ecosystem wallet auto-funded with <span class="font-bold text-white font-mono">৳100,000.00 BDT</span> for testing.
-                    </p>
                 </div>
 
                 <!-- Form Login -->
                 <form id="form-login" class="space-y-4">
                     <div>
-                        <label class="block text-xs font-medium text-slate-400 mb-1.5">Username</label>
+                        <label class="block text-xs font-medium text-[#a1a1aa] mb-1.5">Username</label>
                         <input type="text" id="login-username" required placeholder="e.g. alice"
-                            class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition">
+                            class="w-full bg-[#0c0e11] border border-[#262b33] rounded-xl px-4 py-2.5 text-sm text-white placeholder-[#52525b] focus:outline-none focus:border-accent-500 focus:ring-1 focus:ring-accent-500 transition">
                     </div>
                     <div>
-                        <label class="block text-xs font-medium text-slate-400 mb-1.5">Password</label>
+                        <label class="block text-xs font-medium text-[#a1a1aa] mb-1.5">Password</label>
                         <input type="password" id="login-password" required placeholder="••••••••"
-                            class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition">
+                            class="w-full bg-[#0c0e11] border border-[#262b33] rounded-xl px-4 py-2.5 text-sm text-white placeholder-[#52525b] focus:outline-none focus:border-accent-500 focus:ring-1 focus:ring-accent-500 transition">
                     </div>
                     <button type="submit" id="btn-login-submit"
-                        class="w-full bg-brand-600 hover:bg-brand-500 text-white font-medium py-2.5 rounded-xl transition duration-150 shadow-lg shadow-brand-600/30 flex items-center justify-center space-x-2 mt-2">
+                        class="w-full bg-accent-500 hover:bg-accent-400 text-stone-950 font-bold py-2.5 rounded-xl transition duration-150 shadow-md shadow-accent-500/10 flex items-center justify-center space-x-2 mt-2">
                         <span>Sign In</span>
                     </button>
                 </form>
 
                 <!-- Form Register -->
                 <form id="form-register" class="space-y-4 hidden">
-                    <div>
-                        <label class="block text-xs font-medium text-slate-400 mb-1.5">Desired Username</label>
-                        <input type="text" id="register-username" required placeholder="e.g. bob"
-                            class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition">
+                    <div class="p-3 rounded-xl bg-accent-500/10 border border-accent-500/20 text-xs text-accent-300">
+                        New accounts are auto-credited with <strong>৳100,000.00 BDT</strong>.
                     </div>
                     <div>
-                        <label class="block text-xs font-medium text-slate-400 mb-1.5">Password</label>
+                        <label class="block text-xs font-medium text-[#a1a1aa] mb-1.5">Desired Username</label>
+                        <input type="text" id="register-username" required placeholder="e.g. bob"
+                            class="w-full bg-[#0c0e11] border border-[#262b33] rounded-xl px-4 py-2.5 text-sm text-white placeholder-[#52525b] focus:outline-none focus:border-accent-500 focus:ring-1 focus:ring-accent-500 transition">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-[#a1a1aa] mb-1.5">Password</label>
                         <input type="password" id="register-password" required placeholder="At least 6 characters"
-                            class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition">
+                            class="w-full bg-[#0c0e11] border border-[#262b33] rounded-xl px-4 py-2.5 text-sm text-white placeholder-[#52525b] focus:outline-none focus:border-accent-500 focus:ring-1 focus:ring-accent-500 transition">
                     </div>
                     <button type="submit" id="btn-register-submit"
-                        class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-medium py-2.5 rounded-xl transition duration-150 shadow-lg shadow-emerald-600/30 flex items-center justify-center space-x-2 mt-2">
-                        <span>Create & Auto-Fund Account</span>
+                        class="w-full bg-accent-500 hover:bg-accent-400 text-stone-950 font-bold py-2.5 rounded-xl transition duration-150 shadow-md shadow-accent-500/10 flex items-center justify-center space-x-2 mt-2">
+                        <span>Create & Open Wallet</span>
                     </button>
                 </form>
             </div>
         </section>
 
         <!-- ==================== DASHBOARD VIEW ==================== -->
-        <section id="view-dashboard" class="hidden space-y-8">
+        <section id="view-dashboard" class="hidden space-y-6">
             
-            <!-- Top Hero Stats Grid -->
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <!-- Main Balance Card -->
-                <div class="lg:col-span-2 relative overflow-hidden bg-gradient-to-br from-slate-900 via-indigo-950/40 to-slate-900 border border-indigo-500/20 rounded-3xl p-6 sm:p-8 shadow-xl">
-                    <div class="absolute top-0 right-0 p-6 opacity-10">
-                        <svg class="w-32 h-32 text-indigo-400" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
+            <!-- 1. Minimalist Account Balance Card -->
+            <div class="bg-[#15181d] border border-[#262b33] rounded-3xl p-6 sm:p-7 shadow-xl">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-xs font-medium uppercase tracking-wider text-[#a1a1aa]">
+                        Total Account Balance
+                    </span>
+                    <button id="btn-refresh-balance" class="text-xs text-[#a1a1aa] hover:text-white flex items-center space-x-1.5 bg-[#1f2329] hover:bg-[#282d35] px-2.5 py-1.5 rounded-lg border border-[#2e343f] transition">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                         </svg>
-                    </div>
-
-                    <div class="flex items-center justify-between mb-4">
-                        <span class="text-xs font-semibold uppercase tracking-wider text-indigo-300/80 bg-indigo-500/10 px-3 py-1 rounded-full border border-indigo-500/20">
-                            Available Balance
-                        </span>
-                        <div class="flex items-center space-x-2">
-                            <button id="btn-open-inbox-card" class="text-xs text-brand-300 hover:text-white flex items-center space-x-1.5 bg-brand-500/10 hover:bg-brand-500/20 px-3 py-1.5 rounded-lg border border-brand-500/30 transition font-medium">
-                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/></svg>
-                                <span>Recent Inbox</span>
-                            </button>
-                            <button id="btn-refresh-balance" class="text-xs text-slate-400 hover:text-white flex items-center space-x-1.5 bg-slate-800/80 hover:bg-slate-700/80 px-3 py-1.5 rounded-lg border border-slate-700/60 transition">
-                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                                </svg>
-                                <span>Refresh</span>
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="flex items-baseline space-x-3 mb-6">
-                        <span class="text-4xl sm:text-5xl font-extrabold font-mono text-white tracking-tight" id="dash-balance">৳ 0.00</span>
-                        <span class="text-sm font-medium text-slate-400">BDT</span>
-                    </div>
-
-                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 pt-4 border-t border-slate-800/80 text-xs">
-                        <div>
-                            <span class="text-slate-500 block">Ecosystem Currency</span>
-                            <span class="font-semibold text-slate-300">BDT (Simulated)</span>
-                        </div>
-                        <div>
-                            <span class="text-slate-500 block">Precision Model</span>
-                            <span class="font-semibold text-indigo-300 font-mono">NUMERIC(15,2)</span>
-                        </div>
-                        <div class="col-span-2 sm:col-span-1">
-                            <span class="text-slate-500 block">Concurrency Lock</span>
-                            <span class="font-semibold text-emerald-400">Pessimistic Row Lock</span>
-                        </div>
-                    </div>
+                        <span>Refresh</span>
+                    </button>
                 </div>
 
-                <!-- Ledger Audit Status Mini-Card -->
-                <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 flex flex-col justify-between shadow-xl">
-                    <div>
-                        <div class="flex items-center justify-between mb-3">
-                            <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Ledger Integrity</span>
-                            <span id="audit-badge" class="text-xs font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Active</span>
-                        </div>
-                        <h4 class="text-sm font-semibold text-white mb-2">Double-Entry Verification</h4>
-                        <p class="text-xs text-slate-400 leading-relaxed">
-                            Every transaction atomically logs 1 DEBIT and 1 CREDIT entry.
-                        </p>
-                    </div>
-
-                    <div class="my-4 bg-slate-950 rounded-xl p-3.5 border border-slate-800/80 space-y-2 text-xs font-mono">
-                        <div class="flex justify-between">
-                            <span class="text-slate-500">Total Debits:</span>
-                            <span id="audit-debits" class="text-slate-300 font-medium">৳ 0.00</span>
-                        </div>
-                        <div class="flex justify-between">
-                            <span class="text-slate-500">Total Credits:</span>
-                            <span id="audit-credits" class="text-slate-300 font-medium">৳ 0.00</span>
-                        </div>
-                        <div class="flex justify-between border-t border-slate-800 pt-1.5">
-                            <span class="text-slate-400">Reconciled Net:</span>
-                            <span id="audit-diff" class="text-emerald-400 font-bold">0.00 BDT</span>
-                        </div>
-                        <div class="flex justify-between border-t border-slate-800/60 pt-1.5 text-[10px]">
-                            <span class="text-slate-500">DB Connection Pool:</span>
-                            <span id="db-pool-status" class="text-amber-400 font-semibold">Active</span>
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-2">
-                        <button id="btn-run-reconciliation" class="text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 py-2.5 rounded-xl border border-slate-700 transition flex items-center justify-center space-x-1">
-                            <svg class="w-3.5 h-3.5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                            <span>Audit Ledger</span>
-                        </button>
-                        <a href="/scaling/metrics" target="_blank" class="text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-300 py-2.5 rounded-xl border border-slate-700 transition flex items-center justify-center space-x-1">
-                            <span>DB Metrics</span>
-                            <svg class="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
-                        </a>
-                    </div>
+                <div class="flex items-baseline space-x-2.5">
+                    <span class="text-4xl sm:text-5xl font-extrabold font-mono text-white tracking-tight" id="dash-balance">৳ 0.00</span>
+                    <span class="text-xs font-semibold px-2 py-0.5 rounded-md bg-accent-500/15 text-accent-400 border border-accent-500/20">BDT</span>
                 </div>
             </div>
 
-            <!-- Action Forms & Pending Requests -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- 2. Transfer & Requests Main Area -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 
-                <!-- Left: Transfer & Request Forms Container -->
-                <div class="space-y-6">
-                    <!-- Tab Selector -->
-                    <div class="flex bg-slate-900 p-1.5 rounded-2xl border border-slate-800">
-                        <button id="btn-tab-send" class="flex-1 py-2.5 text-xs font-semibold rounded-xl bg-brand-600 text-white shadow transition-all">
-                            Send Money
-                        </button>
-                        <button id="btn-tab-request" class="flex-1 py-2.5 text-xs font-semibold rounded-xl text-slate-400 hover:text-white transition-all">
-                            Request Money
-                        </button>
-                    </div>
-
-                    <!-- Panel: Send Money -->
-                    <div id="panel-send" class="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-7 shadow-xl">
-                        <div class="flex items-center space-x-2 mb-4">
-                            <div class="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                <!-- Left: Send Money Card -->
+                <div class="bg-[#15181d] border border-[#262b33] rounded-3xl p-6 shadow-xl flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center space-x-2.5 mb-5 pb-3 border-b border-[#242830]">
+                            <div class="w-7 h-7 rounded-lg bg-accent-500/10 text-accent-400 flex items-center justify-center">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
                             </div>
-                            <div>
-                                <h3 class="text-sm font-bold text-white">Direct Peer-to-Peer Transfer</h3>
-                                <p class="text-xs text-slate-400">Atomic instant settlement with idempotency protection</p>
-                            </div>
+                            <h3 class="text-sm font-bold text-white">Send Money</h3>
                         </div>
 
-                        <form id="form-send" class="space-y-4">
+                        <form id="form-send" class="space-y-3.5">
                             <div>
-                                <label class="block text-xs font-medium text-slate-400 mb-1">Recipient Username</label>
+                                <label class="block text-xs font-medium text-[#a1a1aa] mb-1">Recipient Username</label>
                                 <input type="text" id="send-recipient" required placeholder="e.g. bob"
-                                    class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition">
+                                    class="w-full bg-[#0c0e11] border border-[#262b33] rounded-xl px-3.5 py-2 text-sm text-white placeholder-[#52525b] focus:outline-none focus:border-accent-500 transition">
                             </div>
                             <div>
                                 <div class="flex items-center justify-between mb-1">
-                                    <label class="text-xs font-medium text-slate-400">Amount (BDT)</label>
-                                    <!-- Quick Amount Chips -->
+                                    <label class="text-xs font-medium text-[#a1a1aa]">Amount (BDT)</label>
                                     <div class="flex space-x-1">
-                                        <button type="button" onclick="setSendAmount(500)" class="text-[10px] px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 transition">+500</button>
-                                        <button type="button" onclick="setSendAmount(1200)" class="text-[10px] px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 transition">+1,200</button>
-                                        <button type="button" onclick="setSendAmount(2500)" class="text-[10px] px-2 py-0.5 rounded bg-brand-600/30 text-brand-300 hover:bg-brand-600/50 transition font-semibold">+2,500</button>
-                                        <button type="button" onclick="setSendAmount(5000)" class="text-[10px] px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 transition">+5,000</button>
+                                        <button type="button" onclick="setSendAmount(500)" class="text-[10px] px-1.5 py-0.5 rounded bg-[#1e2229] hover:bg-[#282d37] text-[#d4d4d8] transition">+500</button>
+                                        <button type="button" onclick="setSendAmount(1200)" class="text-[10px] px-1.5 py-0.5 rounded bg-[#1e2229] hover:bg-[#282d37] text-[#d4d4d8] transition">+1,200</button>
+                                        <button type="button" onclick="setSendAmount(2500)" class="text-[10px] px-1.5 py-0.5 rounded bg-accent-500/20 text-accent-300 font-semibold border border-accent-500/30 transition">+2,500</button>
                                     </div>
                                 </div>
                                 <div class="relative">
-                                    <span class="absolute left-4 top-2.5 text-slate-500 font-mono text-sm">৳</span>
+                                    <span class="absolute left-3.5 top-2 text-[#71717a] font-mono text-sm">৳</span>
                                     <input type="number" step="0.01" min="0.01" id="send-amount" required placeholder="2500.00"
-                                        class="w-full bg-slate-950 border border-slate-800 rounded-xl pl-8 pr-4 py-2.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 font-mono transition">
+                                        class="w-full bg-[#0c0e11] border border-[#262b33] rounded-xl pl-8 pr-3.5 py-2 text-sm text-white placeholder-[#52525b] focus:outline-none focus:border-accent-500 font-mono transition">
                                 </div>
                             </div>
                             <div>
-                                <label class="block text-xs font-medium text-slate-400 mb-1">Note (Optional)</label>
-                                <input type="text" id="send-note" placeholder="e.g. Dinner share"
-                                    class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition">
+                                <label class="block text-xs font-medium text-[#a1a1aa] mb-1">Note (Optional)</label>
+                                <input type="text" id="send-note" placeholder="e.g. Lunch"
+                                    class="w-full bg-[#0c0e11] border border-[#262b33] rounded-xl px-3.5 py-2 text-sm text-white placeholder-[#52525b] focus:outline-none focus:border-accent-500 transition">
                             </div>
                             
                             <div class="pt-2">
                                 <button type="submit" id="btn-send-submit"
-                                    class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-medium py-3 rounded-xl transition duration-150 shadow-lg shadow-emerald-600/20 flex items-center justify-center space-x-2 text-sm">
-                                    <span>Execute Transfer</span>
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
+                                    class="w-full bg-accent-500 hover:bg-accent-400 text-stone-950 font-bold py-2.5 rounded-xl transition shadow-md shadow-accent-500/10 flex items-center justify-center space-x-1.5 text-xs">
+                                    <span>Send Money</span>
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
                                 </button>
                             </div>
                         </form>
                     </div>
+                </div>
 
-                    <!-- Panel: Request Money -->
-                    <div id="panel-request" class="hidden bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-7 shadow-xl">
-                        <div class="flex items-center space-x-2 mb-4">
-                            <div class="w-8 h-8 rounded-lg bg-indigo-500/10 text-indigo-400 flex items-center justify-center">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+                <!-- Right: Receive / Request Money & Pending Requests -->
+                <div class="bg-[#15181d] border border-[#262b33] rounded-3xl p-6 shadow-xl flex flex-col justify-between">
+                    <div>
+                        <!-- Tabs for Request New vs View Pending -->
+                        <div class="flex items-center justify-between mb-4 pb-3 border-b border-[#242830]">
+                            <div class="flex space-x-3 text-xs font-bold">
+                                <button id="tab-req-form" class="text-white border-b-2 border-accent-400 pb-1">
+                                    Request Money
+                                </button>
+                                <button id="tab-req-list" class="text-[#71717a] hover:text-white pb-1 transition-colors">
+                                    Pending (<span id="incoming-count-badge">0</span>)
+                                </button>
                             </div>
-                            <div>
-                                <h3 class="text-sm font-bold text-white">Request Payment from Friend</h3>
-                                <p class="text-xs text-slate-400">Generates a pending request requiring payer approval</p>
-                            </div>
+                            <button id="btn-refresh-requests" class="text-xs text-[#a1a1aa] hover:text-white p-1 rounded-lg bg-[#1e2229] transition">
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                            </button>
                         </div>
 
-                        <form id="form-request" class="space-y-4">
-                            <div>
-                                <label class="block text-xs font-medium text-slate-400 mb-1">Payer Username</label>
-                                <input type="text" id="req-payer" required placeholder="e.g. alice"
-                                    class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition">
-                            </div>
-                            <div>
-                                <div class="flex items-center justify-between mb-1">
-                                    <label class="text-xs font-medium text-slate-400">Amount to Collect (BDT)</label>
-                                    <div class="flex space-x-1">
-                                        <button type="button" onclick="setRequestAmount(500)" class="text-[10px] px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 transition">+500</button>
-                                        <button type="button" onclick="setRequestAmount(1200)" class="text-[10px] px-2 py-0.5 rounded bg-indigo-600/30 text-indigo-300 hover:bg-indigo-600/50 transition font-semibold">+1,200</button>
-                                        <button type="button" onclick="setRequestAmount(2500)" class="text-[10px] px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 transition">+2,500</button>
+                        <!-- 1. Request Form Panel -->
+                        <div id="panel-req-form">
+                            <form id="form-request" class="space-y-3.5">
+                                <div>
+                                    <label class="block text-xs font-medium text-[#a1a1aa] mb-1">Payer Username</label>
+                                    <input type="text" id="req-payer" required placeholder="e.g. alice"
+                                        class="w-full bg-[#0c0e11] border border-[#262b33] rounded-xl px-3.5 py-2 text-sm text-white placeholder-[#52525b] focus:outline-none focus:border-accent-500 transition">
+                                </div>
+                                <div>
+                                    <div class="flex items-center justify-between mb-1">
+                                        <label class="text-xs font-medium text-[#a1a1aa]">Amount to Collect (BDT)</label>
+                                        <div class="flex space-x-1">
+                                            <button type="button" onclick="setRequestAmount(500)" class="text-[10px] px-1.5 py-0.5 rounded bg-[#1e2229] hover:bg-[#282d37] text-[#d4d4d8] transition">+500</button>
+                                            <button type="button" onclick="setRequestAmount(1200)" class="text-[10px] px-1.5 py-0.5 rounded bg-accent-500/20 text-accent-300 font-semibold border border-accent-500/30 transition">+1,200</button>
+                                            <button type="button" onclick="setRequestAmount(2500)" class="text-[10px] px-1.5 py-0.5 rounded bg-[#1e2229] hover:bg-[#282d37] text-[#d4d4d8] transition">+2,500</button>
+                                        </div>
+                                    </div>
+                                    <div class="relative">
+                                        <span class="absolute left-3.5 top-2 text-[#71717a] font-mono text-sm">৳</span>
+                                        <input type="number" step="0.01" min="0.01" id="req-amount" required placeholder="1200.00"
+                                            class="w-full bg-[#0c0e11] border border-[#262b33] rounded-xl pl-8 pr-3.5 py-2 text-sm text-white placeholder-[#52525b] focus:outline-none focus:border-accent-500 font-mono transition">
                                     </div>
                                 </div>
-                                <div class="relative">
-                                    <span class="absolute left-4 top-2.5 text-slate-500 font-mono text-sm">৳</span>
-                                    <input type="number" step="0.01" min="0.01" id="req-amount" required placeholder="1200.00"
-                                        class="w-full bg-slate-950 border border-slate-800 rounded-xl pl-8 pr-4 py-2.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 font-mono transition">
+                                <div>
+                                    <label class="block text-xs font-medium text-[#a1a1aa] mb-1">Reason / Note</label>
+                                    <input type="text" id="req-note" placeholder="e.g. Dinner share"
+                                        class="w-full bg-[#0c0e11] border border-[#262b33] rounded-xl px-3.5 py-2 text-sm text-white placeholder-[#52525b] focus:outline-none focus:border-accent-500 transition">
                                 </div>
-                            </div>
-                            <div>
-                                <label class="block text-xs font-medium text-slate-400 mb-1">Reason / Note</label>
-                                <input type="text" id="req-note" placeholder="e.g. My friend owes me ৳1,200"
-                                    class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition">
-                            </div>
-                            
-                            <div class="pt-2">
-                                <button type="submit" id="btn-request-submit"
-                                    class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-3 rounded-xl transition duration-150 shadow-lg shadow-indigo-600/20 flex items-center justify-center space-x-2 text-sm">
-                                    <span>Send Payment Request</span>
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
+                                
+                                <div class="pt-2">
+                                    <button type="submit" id="btn-request-submit"
+                                        class="w-full bg-[#20252d] hover:bg-[#2b313c] text-accent-300 border border-accent-500/30 font-bold py-2.5 rounded-xl transition flex items-center justify-center space-x-1.5 text-xs">
+                                        <span>Create Payment Request</span>
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
 
-                <!-- Right: Pending Requests (Incoming & Outgoing) -->
-                <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-7 shadow-xl flex flex-col">
-                    <div class="flex items-center justify-between mb-4">
-                        <div class="flex items-center space-x-2">
-                            <div class="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
-                            </div>
-                            <div>
-                                <h3 class="text-sm font-bold text-white">Payment Requests</h3>
-                                <p class="text-xs text-slate-400">Incoming requests you need to pay, and outgoing requests</p>
+                        <!-- 2. Pending Requests List Panel -->
+                        <div id="panel-req-list" class="hidden space-y-2.5 max-h-64 overflow-y-auto pr-1">
+                            <div id="container-incoming-requests" class="space-y-2">
+                                <div class="text-center py-8 text-[#71717a] text-xs">No pending requests to pay.</div>
                             </div>
                         </div>
-                        <button id="btn-refresh-requests" class="text-xs text-slate-400 hover:text-white p-1.5 rounded-lg bg-slate-800 transition">
-                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-                        </button>
-                    </div>
-
-                    <!-- Requests Sub-tabs -->
-                    <div class="flex border-b border-slate-800 mb-4 text-xs font-semibold">
-                        <button id="subtab-incoming" class="pb-2 text-brand-400 border-b-2 border-brand-500 mr-4 transition-colors">
-                            Incoming (Pay Requests) <span id="incoming-count-badge" class="ml-1 px-1.5 py-0.5 rounded-full bg-brand-500/20 text-brand-300 text-[10px]">0</span>
-                        </button>
-                        <button id="subtab-outgoing" class="pb-2 text-slate-400 hover:text-slate-200 border-b-2 border-transparent transition-colors">
-                            Outgoing (Your Requests)
-                        </button>
-                    </div>
-
-                    <!-- Incoming Container -->
-                    <div id="container-incoming-requests" class="flex-1 space-y-3 overflow-y-auto max-h-80 pr-1">
-                        <div class="text-center py-8 text-slate-500 text-xs">No pending requests to pay.</div>
-                    </div>
-
-                    <!-- Outgoing Container -->
-                    <div id="container-outgoing-requests" class="hidden flex-1 space-y-3 overflow-y-auto max-h-80 pr-1">
-                        <div class="text-center py-8 text-slate-500 text-xs">No outgoing requests created yet.</div>
                     </div>
                 </div>
+
             </div>
 
         </section>
@@ -419,25 +308,24 @@
     </main>
 
     <!-- ==================== INBOX SLIDE-OVER DRAWER ==================== -->
-    <div id="drawer-inbox" class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm hidden flex justify-end transition-opacity">
-        <div class="bg-slate-900 border-l border-slate-800 w-full max-w-md h-full flex flex-col shadow-2xl p-6 sm:p-7 space-y-5 animate-slide-left overflow-hidden">
+    <div id="drawer-inbox" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden flex justify-end transition-opacity">
+        <div class="bg-[#14171b] border-l border-[#262b33] w-full max-w-md h-full flex flex-col shadow-2xl p-6 space-y-4 animate-slide-left overflow-hidden">
             
             <!-- Drawer Header -->
-            <div class="flex items-center justify-between border-b border-slate-800 pb-4">
-                <div class="flex items-center space-x-2.5">
-                    <div class="w-8 h-8 rounded-xl bg-brand-500/10 text-brand-400 flex items-center justify-center border border-brand-500/20">
+            <div class="flex items-center justify-between border-b border-[#242830] pb-3">
+                <div class="flex items-center space-x-2">
+                    <div class="w-7 h-7 rounded-lg bg-accent-500/10 text-accent-400 flex items-center justify-center">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/></svg>
                     </div>
                     <div>
-                        <h3 class="text-sm font-bold text-white">Transaction Inbox</h3>
-                        <p class="text-[11px] text-slate-400">All recent double-entry ledger activity</p>
+                        <h3 class="text-sm font-bold text-white">Recent Transactions</h3>
                     </div>
                 </div>
                 <div class="flex items-center space-x-2">
-                    <button id="btn-mark-inbox-read" class="text-[11px] text-slate-400 hover:text-white px-2 py-1 bg-slate-800/80 rounded-lg transition">
+                    <button id="btn-mark-inbox-read" class="text-[10px] text-[#a1a1aa] hover:text-white px-2 py-1 bg-[#1e2229] rounded-lg transition">
                         Clear (0)
                     </button>
-                    <button id="btn-close-inbox" class="text-slate-400 hover:text-white p-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-800 transition">
+                    <button id="btn-close-inbox" class="text-[#a1a1aa] hover:text-white p-1 rounded-lg hover:bg-[#1e2229] transition">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                     </button>
                 </div>
@@ -445,117 +333,18 @@
 
             <!-- Filter Pills -->
             <div class="flex items-center justify-between">
-                <div class="flex bg-slate-950 p-1 rounded-xl border border-slate-800 text-[11px]">
-                    <button id="filter-all" class="px-2.5 py-1 rounded-lg bg-slate-800 text-white font-medium">All</button>
-                    <button id="filter-debits" class="px-2.5 py-1 rounded-lg text-slate-400 hover:text-rose-400">Debits (-)</button>
-                    <button id="filter-credits" class="px-2.5 py-1 rounded-lg text-slate-400 hover:text-emerald-400">Credits (+)</button>
+                <div class="flex bg-[#0c0e11] p-1 rounded-xl border border-[#242830] text-[11px]">
+                    <button id="filter-all" class="px-2 py-0.5 rounded-lg bg-[#1f2329] text-white font-medium">All</button>
+                    <button id="filter-debits" class="px-2 py-0.5 rounded-lg text-[#71717a] hover:text-rose-400">Sent (-)</button>
+                    <button id="filter-credits" class="px-2 py-0.5 rounded-lg text-[#71717a] hover:text-accent-400">Received (+)</button>
                 </div>
-                <span id="inbox-total-count" class="text-[11px] font-mono text-slate-400">0 events</span>
+                <span id="inbox-total-count" class="text-[11px] font-mono text-[#71717a]">0 items</span>
             </div>
 
             <!-- Inbox Items List Container -->
-            <div id="inbox-items-container" class="flex-1 overflow-y-auto space-y-2.5 pr-1 font-mono text-xs">
-                <div class="text-center py-12 text-slate-500 text-xs font-sans">
-                    No transactions yet. Complete a transfer to see it appear here in real-time.
-                </div>
-            </div>
-
-            <!-- Drawer Footer / Quick Reconciliation status -->
-            <div class="pt-3 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
-                <span>Double-entry ledger status:</span>
-                <span class="text-emerald-400 font-semibold font-mono">100% Invariant Conserved</span>
-            </div>
-
-        </div>
-    </div>
-
-    <!-- ==================== CONCURRENCY STRESS TEST MODAL ==================== -->
-    <div id="modal-stress-test" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-        <div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl space-y-6 max-h-[90vh] overflow-y-auto">
-            
-            <!-- Modal Header -->
-            <div class="flex items-center justify-between border-b border-slate-800 pb-4">
-                <div class="flex items-center space-x-3">
-                    <div class="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center font-bold text-lg border border-amber-500/20">
-                        ⚡
-                    </div>
-                    <div>
-                        <h3 class="text-base font-bold text-white">Live In-Browser Concurrency Stress Test</h3>
-                        <p class="text-xs text-slate-400">Fires simultaneous transfers to prove race condition & double-spending immunity</p>
-                    </div>
-                </div>
-                <button id="btn-close-stress-modal" class="text-slate-400 hover:text-white p-2 rounded-xl bg-slate-800/60 hover:bg-slate-800 transition">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-                </button>
-            </div>
-
-            <!-- Parameters Grid -->
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
-                <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800">
-                    <label class="text-slate-500 block mb-1 font-medium">Parallel Requests</label>
-                    <span class="text-xl font-bold font-mono text-amber-400">10 Threads</span>
-                    <span class="text-[10px] text-slate-500 block mt-0.5">Fired at exact same millisecond</span>
-                </div>
-                <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800">
-                    <label class="text-slate-500 block mb-1 font-medium">Amount Per Request</label>
-                    <span class="text-xl font-bold font-mono text-white">৳ 20,000</span>
-                    <span class="text-[10px] text-slate-500 block mt-0.5">Total demand = ৳200,000 BDT</span>
-                </div>
-                <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800">
-                    <label class="text-slate-500 block mb-1 font-medium">Recipient Target</label>
-                    <input type="text" id="stress-recipient-input" value="bob" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white font-mono mt-0.5 focus:outline-none focus:border-amber-400">
-                </div>
-            </div>
-
-            <!-- Defense Callout for Judges -->
-            <div class="p-4 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-xs space-y-1.5">
-                <div class="flex items-center space-x-1.5 text-indigo-300 font-semibold">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                    <span>How the Backend Protects This (Judge Talking Point)</span>
-                </div>
-                <p class="text-slate-300 leading-relaxed text-[11px]">
-                    If user balance is ৳100,000 and 10 threads each request ৳20,000 (total ৳200,000):
-                    <br>• In a flawed system, race conditions allow all 10 to pass (double-spending bug).
-                    <br>• In our system, PostgreSQL <code class="text-amber-300 font-mono">SELECT ... FOR UPDATE</code> locks the row, serializes the balance checks, allows only the first <strong class="text-emerald-400 font-bold">5 transfers</strong>, and cleanly rejects the rest with <code class="text-rose-300 font-mono">400 Insufficient Balance</code>. Balance never goes negative.
-                </p>
-            </div>
-
-            <!-- Action Button -->
-            <div>
-                <button id="btn-execute-stress-test" class="w-full py-3.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-extrabold rounded-2xl shadow-lg shadow-orange-500/20 transition-all flex items-center justify-center space-x-2 text-sm">
-                    <span>🔥 Execute 10 Parallel Transfers Now (Promise.all)</span>
-                </button>
-            </div>
-
-            <!-- Results Output Area -->
-            <div id="stress-results-area" class="hidden space-y-4 pt-2 border-t border-slate-800">
-                <div class="flex items-center justify-between">
-                    <h4 class="text-xs font-bold text-slate-300 uppercase tracking-wider">Live Execution Results</h4>
-                    <span id="stress-summary-badge" class="text-xs font-mono px-2.5 py-0.5 rounded font-bold"></span>
-                </div>
-
-                <!-- Math Summary Cards -->
-                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs font-mono">
-                    <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800">
-                        <span class="text-slate-500 block text-[10px]">Starting Balance</span>
-                        <span id="stress-res-start" class="font-bold text-slate-200">৳ 0.00</span>
-                    </div>
-                    <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800">
-                        <span class="text-slate-500 block text-[10px]">Succeeded (Settled)</span>
-                        <span id="stress-res-success" class="font-bold text-emerald-400">0 / 10</span>
-                    </div>
-                    <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800">
-                        <span class="text-slate-500 block text-[10px]">Blocked (No Overdraft)</span>
-                        <span id="stress-res-failed" class="font-bold text-rose-400">0 / 10</span>
-                    </div>
-                    <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800">
-                        <span class="text-slate-500 block text-[10px]">Ending Balance</span>
-                        <span id="stress-res-end" class="font-bold text-indigo-300">৳ 0.00</span>
-                    </div>
-                </div>
-
-                <!-- Thread Log List -->
-                <div id="stress-threads-log" class="space-y-1.5 max-h-48 overflow-y-auto font-mono text-[11px] bg-slate-950 p-3 rounded-2xl border border-slate-800/80">
+            <div id="inbox-items-container" class="flex-1 overflow-y-auto space-y-2 pr-1 font-mono text-xs">
+                <div class="text-center py-12 text-[#71717a] text-xs font-sans">
+                    No transactions yet. Complete a transfer to see it appear here.
                 </div>
             </div>
 
@@ -563,8 +352,8 @@
     </div>
 
     <!-- Footer -->
-    <footer class="border-t border-slate-900 py-6 text-center text-xs text-slate-500">
-        <p>PayPulse — PSTU Hackathon 2026 • Built with FastAPI + SQLAlchemy 2.x + PostgreSQL Double-Entry Ledger</p>
+    <footer class="border-t border-[#1c1f24] py-5 text-center text-xs text-[#52525b]">
+        <p>PayPulse • Money Movement Engine</p>
     </footer>
 
     <!-- App JavaScript -->

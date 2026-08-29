@@ -1,6 +1,6 @@
 /**
- * PayPulse Frontend Application Logic
- * Real-Time Transaction Inbox Pop-up, Concurrency Stress Arena, & P2P Money Movement
+ * PayPulse Application Logic
+ * Modern, Minimalist Greyscale + Green Accent Theme
  */
 
 // ── State ──────────────────────────────────────────────────────────────────
@@ -30,87 +30,58 @@ const dashBalance = document.getElementById('dash-balance');
 const btnRefreshBalance = document.getElementById('btn-refresh-balance');
 const btnLogout = document.getElementById('btn-logout');
 
-// Send / Request Tab Buttons & Panels
-const btnTabSend = document.getElementById('btn-tab-send');
-const btnTabRequest = document.getElementById('btn-tab-request');
-const panelSend = document.getElementById('panel-send');
-const panelRequest = document.getElementById('panel-request');
-
-// Forms
+// Forms & Panels
 const formSend = document.getElementById('form-send');
 const formRequest = document.getElementById('form-request');
-
-// Requests Subtabs & Containers
-const subtabIncoming = document.getElementById('subtab-incoming');
-const subtabOutgoing = document.getElementById('subtab-outgoing');
+const tabReqForm = document.getElementById('tab-req-form');
+const tabReqList = document.getElementById('tab-req-list');
+const panelReqForm = document.getElementById('panel-req-form');
+const panelReqList = document.getElementById('panel-req-list');
 const containerIncoming = document.getElementById('container-incoming-requests');
-const containerOutgoing = document.getElementById('container-outgoing-requests');
 const incomingCountBadge = document.getElementById('incoming-count-badge');
 const btnRefreshRequests = document.getElementById('btn-refresh-requests');
-
-// Ledger & Audit
-const btnRunReconciliation = document.getElementById('btn-run-reconciliation');
-const auditDebits = document.getElementById('audit-debits');
-const auditCredits = document.getElementById('audit-credits');
-const auditDiff = document.getElementById('audit-diff');
-const auditBadge = document.getElementById('audit-badge');
 
 // Inbox Drawer Elements
 const drawerInbox = document.getElementById('drawer-inbox');
 const btnToggleInbox = document.getElementById('btn-toggle-inbox');
-const btnOpenInboxCard = document.getElementById('btn-open-inbox-card');
 const btnCloseInbox = document.getElementById('btn-close-inbox');
 const btnMarkInboxRead = document.getElementById('btn-mark-inbox-read');
 const inboxBadge = document.getElementById('inbox-badge');
 const inboxItemsContainer = document.getElementById('inbox-items-container');
 const inboxTotalCount = document.getElementById('inbox-total-count');
 
-// Ledger Filters in Drawer
+// Drawer Filters
 const filterAll = document.getElementById('filter-all');
 const filterDebits = document.getElementById('filter-debits');
 const filterCredits = document.getElementById('filter-credits');
-
-// Stress Test Modal Elements
-const modalStressTest = document.getElementById('modal-stress-test');
-const btnOpenStressTestNav = document.getElementById('btn-open-stress-test-nav');
-const btnCloseStressModal = document.getElementById('btn-close-stress-modal');
-const btnExecuteStressTest = document.getElementById('btn-execute-stress-test');
-const stressRecipientInput = document.getElementById('stress-recipient-input');
-const stressResultsArea = document.getElementById('stress-results-area');
-const stressSummaryBadge = document.getElementById('stress-summary-badge');
-const stressResStart = document.getElementById('stress-res-start');
-const stressResSuccess = document.getElementById('stress-res-success');
-const stressResFailed = document.getElementById('stress-res-failed');
-const stressResEnd = document.getElementById('stress-res-end');
-const stressThreadsLog = document.getElementById('stress-threads-log');
 
 // ── Toast Notifications ────────────────────────────────────────────────────
 function showToast(message, type = 'info') {
     const container = document.getElementById('toast-container');
     const toast = document.createElement('div');
     
-    let bgClass = 'bg-slate-900 border-slate-700 text-white';
-    let icon = 'ℹ️';
+    let bgClass = 'bg-[#1a1e24] border-[#2b303b] text-white';
+    let icon = '•';
     if (type === 'success') {
-        bgClass = 'bg-emerald-950/90 border-emerald-500/40 text-emerald-200';
-        icon = '✅';
+        bgClass = 'bg-[#0f291e] border-accent-500/40 text-accent-300';
+        icon = '✓';
     } else if (type === 'error') {
-        bgClass = 'bg-rose-950/90 border-rose-500/40 text-rose-200';
-        icon = '❌';
+        bgClass = 'bg-[#291114] border-rose-500/40 text-rose-300';
+        icon = '✕';
     }
 
-    toast.className = `p-4 rounded-xl border shadow-xl flex items-center space-x-3 pointer-events-auto fade-in ${bgClass}`;
+    toast.className = `p-3.5 rounded-2xl border shadow-xl flex items-center space-x-2.5 pointer-events-auto fade-in text-xs ${bgClass}`;
     toast.innerHTML = `
-        <span class="text-base">${icon}</span>
-        <div class="text-xs font-medium">${message}</div>
+        <span class="font-bold text-sm shrink-0">${icon}</span>
+        <div class="font-medium">${escapeHtml(message)}</div>
     `;
 
     container.appendChild(toast);
     setTimeout(() => {
         toast.style.opacity = '0';
-        toast.style.transition = 'opacity 0.3s ease';
-        setTimeout(() => toast.remove(), 300);
-    }, 4000);
+        toast.style.transition = 'opacity 0.25s ease';
+        setTimeout(() => toast.remove(), 250);
+    }, 3500);
 }
 
 // ── API Helper ─────────────────────────────────────────────────────────────
@@ -181,7 +152,7 @@ function setAuthState(token, username) {
 
 function logout() {
     setAuthState(null, null);
-    showToast('Signed out successfully.');
+    showToast('Signed out.');
 }
 
 // Login
@@ -216,7 +187,6 @@ formRegister.addEventListener('submit', async (e) => {
         });
         if (res) {
             showToast(`Account created! Auto-funded with ৳${res.wallet_balance_bdt} BDT.`, 'success');
-            // Auto login
             const loginRes = await apiCall('/auth/login', {
                 method: 'POST',
                 body: JSON.stringify({ username, password })
@@ -231,15 +201,15 @@ formRegister.addEventListener('submit', async (e) => {
 
 // Auth Tab Switching
 tabLogin.addEventListener('click', () => {
-    tabLogin.className = 'flex-1 pb-3 text-sm font-semibold text-brand-400 border-b-2 border-brand-500 transition-colors';
-    tabRegister.className = 'flex-1 pb-3 text-sm font-semibold text-slate-400 hover:text-slate-200 border-b-2 border-transparent transition-colors';
+    tabLogin.className = 'flex-1 pb-3 text-sm font-semibold text-accent-400 border-b-2 border-accent-400 transition-colors';
+    tabRegister.className = 'flex-1 pb-3 text-sm font-semibold text-[#71717a] hover:text-[#d4d4d8] border-b-2 border-transparent transition-colors';
     formLogin.classList.remove('hidden');
     formRegister.classList.add('hidden');
 });
 
 tabRegister.addEventListener('click', () => {
-    tabRegister.className = 'flex-1 pb-3 text-sm font-semibold text-emerald-400 border-b-2 border-emerald-500 transition-colors';
-    tabLogin.className = 'flex-1 pb-3 text-sm font-semibold text-slate-400 hover:text-slate-200 border-b-2 border-transparent transition-colors';
+    tabRegister.className = 'flex-1 pb-3 text-sm font-semibold text-accent-400 border-b-2 border-accent-400 transition-colors';
+    tabLogin.className = 'flex-1 pb-3 text-sm font-semibold text-[#71717a] hover:text-[#d4d4d8] border-b-2 border-transparent transition-colors';
     formRegister.classList.remove('hidden');
     formLogin.classList.add('hidden');
 });
@@ -260,12 +230,11 @@ async function loadDashboardData() {
     await Promise.all([
         refreshBalance(),
         refreshRequests(),
-        refreshLedgerHistory(),
-        runReconciliationAudit()
+        refreshLedgerHistory()
     ]);
 }
 
-// Background auto-refresh
+// Background auto-refresh polling
 function startPolling() {
     stopPolling();
     pollInterval = setInterval(async () => {
@@ -276,7 +245,7 @@ function startPolling() {
                 refreshLedgerHistory(true)
             ]);
         }
-    }, 4000);
+    }, 3500);
 }
 
 function stopPolling() {
@@ -306,7 +275,7 @@ btnRefreshBalance.addEventListener('click', () => {
     showToast('Balance updated.');
 });
 
-// 2. Send Money (Direct Transfer with Idempotency Key)
+// 2. Send Money
 formSend.addEventListener('submit', async (e) => {
     e.preventDefault();
     const recipient = document.getElementById('send-recipient').value.trim();
@@ -319,10 +288,9 @@ formSend.addEventListener('submit', async (e) => {
     }
 
     const idempotencyKey = typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : `idemp-${Date.now()}-${Math.random()}`;
-
     const btn = document.getElementById('btn-send-submit');
     btn.disabled = true;
-    btn.innerHTML = `<span class="animate-spin inline-block mr-2">⚡</span> Processing Atomic Transfer...`;
+    btn.innerHTML = `<span>Processing...</span>`;
 
     try {
         const res = await apiCall('/transfers/send', {
@@ -338,17 +306,15 @@ formSend.addEventListener('submit', async (e) => {
         });
 
         if (res) {
-            showToast(`Transferred ৳${res.amount_bdt} BDT to ${res.recipient} successfully!`, 'success');
+            showToast(`Sent ৳${res.amount_bdt} BDT to ${res.recipient}!`, 'success');
             formSend.reset();
-            
-            // Pop up the inbox badge!
             triggerNewInboxNotification();
             await loadDashboardData();
         }
     } catch (e) {
     } finally {
         btn.disabled = false;
-        btn.innerHTML = `<span>Execute Transfer</span><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>`;
+        btn.innerHTML = `<span>Send Money</span><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>`;
     }
 });
 
@@ -398,59 +364,27 @@ async function refreshRequests() {
         const pendingIncoming = incoming.filter(r => r.status === 'pending');
         incomingCountBadge.textContent = pendingIncoming.length;
 
-        if (incoming.length === 0) {
-            containerIncoming.innerHTML = `<div class="text-center py-8 text-slate-500 text-xs">No pending requests to pay.</div>`;
+        if (pendingIncoming.length === 0) {
+            containerIncoming.innerHTML = `<div class="text-center py-8 text-[#71717a] text-xs">No pending requests to pay.</div>`;
         } else {
-            containerIncoming.innerHTML = incoming.map(r => `
-                <div class="p-3.5 rounded-2xl bg-slate-950 border border-slate-800/80 flex items-center justify-between space-x-3 fade-in">
+            containerIncoming.innerHTML = pendingIncoming.map(r => `
+                <div class="p-3 rounded-2xl bg-[#0c0e11] border border-[#242830] flex items-center justify-between space-x-3 fade-in">
                     <div>
-                        <div class="flex items-center space-x-2">
+                        <div class="flex items-center space-x-1.5">
                             <span class="text-xs font-bold text-white">${escapeHtml(r.requester_username)}</span>
-                            <span class="text-[10px] text-slate-400">requests</span>
-                            <span class="text-xs font-mono font-bold text-amber-400">৳${parseFloat(r.amount_bdt).toFixed(2)}</span>
+                            <span class="text-[10px] text-[#71717a]">asks for</span>
+                            <span class="text-xs font-mono font-bold text-accent-400">৳${parseFloat(r.amount_bdt).toFixed(2)}</span>
                         </div>
-                        ${r.note ? `<p class="text-[11px] text-slate-400 mt-0.5">"${escapeHtml(r.note)}"</p>` : ''}
-                        <span class="text-[10px] text-slate-500 block mt-1">${formatTime(r.created_at)}</span>
+                        ${r.note ? `<p class="text-[10px] text-[#a1a1aa] mt-0.5">"${escapeHtml(r.note)}"</p>` : ''}
                     </div>
 
-                    <div>
-                        ${r.status === 'pending' ? `
-                            <div class="flex items-center space-x-1.5">
-                                <button onclick="handleApproveRequest(${r.request_id})" class="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-medium transition shadow-sm">
-                                    Pay Now
-                                </button>
-                                <button onclick="handleRejectRequest(${r.request_id})" class="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-rose-400 rounded-lg text-xs font-medium border border-slate-700 transition">
-                                    Reject
-                                </button>
-                            </div>
-                        ` : `
-                            <span class="text-xs font-mono px-2 py-0.5 rounded ${r.status === 'approved' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'} uppercase text-[10px]">
-                                ${r.status}
-                            </span>
-                        `}
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        const outgoing = res.outgoing || [];
-        if (outgoing.length === 0) {
-            containerOutgoing.innerHTML = `<div class="text-center py-8 text-slate-500 text-xs">No outgoing requests created yet.</div>`;
-        } else {
-            containerOutgoing.innerHTML = outgoing.map(r => `
-                <div class="p-3.5 rounded-2xl bg-slate-950 border border-slate-800/80 flex items-center justify-between space-x-3 fade-in">
-                    <div>
-                        <div class="flex items-center space-x-2">
-                            <span class="text-xs font-bold text-white">To: ${escapeHtml(r.payer_username)}</span>
-                            <span class="text-xs font-mono font-bold text-indigo-300">৳${parseFloat(r.amount_bdt).toFixed(2)}</span>
-                        </div>
-                        ${r.note ? `<p class="text-[11px] text-slate-400 mt-0.5">"${escapeHtml(r.note)}"</p>` : ''}
-                        <span class="text-[10px] text-slate-500 block mt-1">${formatTime(r.created_at)}</span>
-                    </div>
-                    <div>
-                        <span class="text-xs font-mono px-2.5 py-1 rounded ${r.status === 'pending' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' : (r.status === 'approved' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400')} uppercase text-[10px]">
-                            ${r.status}
-                        </span>
+                    <div class="flex items-center space-x-1.5 shrink-0">
+                        <button onclick="handleApproveRequest(${r.request_id})" class="px-2.5 py-1 bg-accent-500 hover:bg-accent-400 text-stone-950 rounded-lg text-xs font-bold transition shadow-sm">
+                            Pay
+                        </button>
+                        <button onclick="handleRejectRequest(${r.request_id})" class="px-2 py-1 bg-[#1a1e24] hover:bg-[#252b34] text-rose-300 rounded-lg text-xs font-medium border border-[#2b303b] transition">
+                            ✕
+                        </button>
                     </div>
                 </div>
             `).join('');
@@ -464,7 +398,7 @@ window.handleApproveRequest = async function(requestId) {
             method: 'POST'
         });
         if (res) {
-            showToast('Payment request approved and funds transferred!', 'success');
+            showToast('Request approved & funds transferred!', 'success');
             triggerNewInboxNotification();
             loadDashboardData();
         }
@@ -477,15 +411,33 @@ window.handleRejectRequest = async function(requestId) {
             method: 'POST'
         });
         if (res) {
-            showToast('Payment request rejected.', 'info');
+            showToast('Request rejected.', 'info');
             refreshRequests();
         }
     } catch (e) {}
 };
 
-btnRefreshRequests.addEventListener('click', refreshRequests);
+btnRefreshRequests.addEventListener('click', () => {
+    refreshRequests();
+    showToast('Requests refreshed.');
+});
 
-// ── Transaction Inbox & Notification Pop-up System ─────────────────────────
+// Tab switching between Request Form and Pending Requests list
+tabReqForm.addEventListener('click', () => {
+    tabReqForm.className = 'text-white border-b-2 border-accent-400 pb-1';
+    tabReqList.className = 'text-[#71717a] hover:text-white pb-1 transition-colors';
+    panelReqForm.classList.remove('hidden');
+    panelReqList.classList.add('hidden');
+});
+
+tabReqList.addEventListener('click', () => {
+    tabReqList.className = 'text-white border-b-2 border-accent-400 pb-1';
+    tabReqForm.className = 'text-[#71717a] hover:text-white pb-1 transition-colors';
+    panelReqList.classList.remove('hidden');
+    panelReqForm.classList.add('hidden');
+});
+
+// ── Transaction Inbox System ───────────────────────────────────────────────
 function triggerNewInboxNotification() {
     unreadTransactionCount += 1;
     updateInboxBadgeUI();
@@ -493,7 +445,7 @@ function triggerNewInboxNotification() {
 
 function updateInboxBadgeUI() {
     if (unreadTransactionCount > 0) {
-        inboxBadge.textContent = `(${unreadTransactionCount})`;
+        inboxBadge.textContent = `${unreadTransactionCount}`;
         inboxBadge.classList.remove('hidden');
         btnMarkInboxRead.textContent = `Clear (${unreadTransactionCount})`;
     } else {
@@ -507,10 +459,8 @@ async function refreshLedgerHistory(isBackground = false) {
         const res = await apiCall('/transactions/history', {}, true);
         if (!res || !res.entries) return;
 
-        const previousLength = rawLedgerEntries.length;
         rawLedgerEntries = res.entries;
         
-        // Detect new unread entries if new entries arrived
         if (rawLedgerEntries.length > 0) {
             const newestId = rawLedgerEntries[0].ledger_entry_id;
             if (lastSeenLedgerId > 0 && newestId > lastSeenLedgerId) {
@@ -526,7 +476,6 @@ async function refreshLedgerHistory(isBackground = false) {
 
 function openInboxDrawer() {
     drawerInbox.classList.remove('hidden');
-    // Clear badge count upon opening and persist last seen ID
     if (rawLedgerEntries.length > 0) {
         lastSeenLedgerId = rawLedgerEntries[0].ledger_entry_id;
         localStorage.setItem('paypulse_last_seen_ledger', String(lastSeenLedgerId));
@@ -541,7 +490,6 @@ function closeInboxDrawer() {
 }
 
 btnToggleInbox.addEventListener('click', openInboxDrawer);
-btnOpenInboxCard.addEventListener('click', openInboxDrawer);
 btnCloseInbox.addEventListener('click', closeInboxDrawer);
 btnMarkInboxRead.addEventListener('click', () => {
     unreadTransactionCount = 0;
@@ -553,14 +501,13 @@ btnMarkInboxRead.addEventListener('click', () => {
     showToast('Inbox marked as read.');
 });
 
-// Close drawer on backdrop click
 drawerInbox.addEventListener('click', (e) => {
     if (e.target === drawerInbox) closeInboxDrawer();
 });
 
 function renderInboxDrawer() {
     let entries = rawLedgerEntries;
-    inboxTotalCount.textContent = `${entries.length} total`;
+    inboxTotalCount.textContent = `${entries.length} items`;
 
     if (currentLedgerFilter === 'debits') {
         entries = entries.filter(e => e.entry_type === 'DEBIT');
@@ -570,8 +517,8 @@ function renderInboxDrawer() {
 
     if (entries.length === 0) {
         inboxItemsContainer.innerHTML = `
-            <div class="text-center py-12 text-slate-500 text-xs font-sans">
-                No matching transactions found.
+            <div class="text-center py-12 text-[#71717a] text-xs font-sans">
+                No transactions found.
             </div>
         `;
         return;
@@ -580,30 +527,30 @@ function renderInboxDrawer() {
     inboxItemsContainer.innerHTML = entries.map(entry => {
         const isDebit = entry.entry_type === 'DEBIT';
         const typeBadge = isDebit
-            ? `<span class="px-2 py-0.5 rounded bg-rose-500/10 text-rose-400 border border-rose-500/20 font-bold text-[10px]">DEBIT (-)</span>`
-            : `<span class="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold text-[10px]">CREDIT (+)</span>`;
+            ? `<span class="px-1.5 py-0.2 rounded bg-rose-500/10 text-rose-300 font-bold text-[10px]">SENT</span>`
+            : `<span class="px-1.5 py-0.2 rounded bg-accent-500/10 text-accent-400 font-bold text-[10px]">RECEIVED</span>`;
         
-        const amountColor = isDebit ? 'text-rose-400' : 'text-emerald-400';
+        const amountColor = isDebit ? 'text-rose-300' : 'text-accent-400';
         const amountSign = isDebit ? '-' : '+';
 
         return `
-            <div class="p-3.5 rounded-2xl bg-slate-950 border border-slate-800/90 hover:border-slate-700 transition shadow-sm space-y-2 fade-in">
+            <div class="p-3 rounded-2xl bg-[#0c0e11] border border-[#242830] space-y-1.5 fade-in">
                 <div class="flex items-center justify-between">
                     <div class="flex items-center space-x-2">
                         ${typeBadge}
-                        <span class="text-[11px] font-bold text-slate-300">TXN #${entry.transaction_id}</span>
+                        <span class="text-[10px] text-[#71717a]">TXN #${entry.transaction_id}</span>
                     </div>
                     <span class="text-xs font-bold font-mono ${amountColor}">
                         ${amountSign} ৳${parseFloat(entry.amount_bdt).toFixed(2)}
                     </span>
                 </div>
 
-                <div class="flex items-center justify-between text-[11px] text-slate-400 pt-1 border-t border-slate-900">
+                <div class="flex items-center justify-between text-[10px] text-[#71717a] pt-1 border-t border-[#1a1e24]">
                     <div>
-                        <span class="text-slate-500">Balance After:</span>
-                        <span class="text-white font-mono font-semibold">৳${parseFloat(entry.balance_after).toFixed(2)}</span>
+                        <span>Balance:</span>
+                        <span class="text-[#d4d4d8] font-mono font-medium">৳${parseFloat(entry.balance_after).toFixed(2)}</span>
                     </div>
-                    <span class="text-[10px] text-slate-500 font-sans">${formatTime(entry.created_at)}</span>
+                    <span class="font-sans">${formatTime(entry.created_at)}</span>
                 </div>
             </div>
         `;
@@ -612,228 +559,34 @@ function renderInboxDrawer() {
 
 filterAll.addEventListener('click', () => {
     currentLedgerFilter = 'all';
-    filterAll.className = 'px-2.5 py-1 rounded-lg bg-slate-800 text-white font-medium';
-    filterDebits.className = 'px-2.5 py-1 rounded-lg text-slate-400 hover:text-rose-400';
-    filterCredits.className = 'px-2.5 py-1 rounded-lg text-slate-400 hover:text-emerald-400';
+    filterAll.className = 'px-2 py-0.5 rounded-lg bg-[#1f2329] text-white font-medium';
+    filterDebits.className = 'px-2 py-0.5 rounded-lg text-[#71717a] hover:text-rose-400';
+    filterCredits.className = 'px-2 py-0.5 rounded-lg text-[#71717a] hover:text-accent-400';
     renderInboxDrawer();
 });
 
 filterDebits.addEventListener('click', () => {
     currentLedgerFilter = 'debits';
-    filterDebits.className = 'px-2.5 py-1 rounded-lg bg-rose-500/20 text-rose-300 font-medium border border-rose-500/30';
-    filterAll.className = 'px-2.5 py-1 rounded-lg text-slate-400 hover:text-white';
-    filterCredits.className = 'px-2.5 py-1 rounded-lg text-slate-400 hover:text-emerald-400';
+    filterDebits.className = 'px-2 py-0.5 rounded-lg bg-rose-500/20 text-rose-300 font-medium';
+    filterAll.className = 'px-2 py-0.5 rounded-lg text-[#71717a] hover:text-white';
+    filterCredits.className = 'px-2 py-0.5 rounded-lg text-[#71717a] hover:text-accent-400';
     renderInboxDrawer();
 });
 
 filterCredits.addEventListener('click', () => {
     currentLedgerFilter = 'credits';
-    filterCredits.className = 'px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-300 font-medium border border-emerald-500/30';
-    filterAll.className = 'px-2.5 py-1 rounded-lg text-slate-400 hover:text-white';
-    filterDebits.className = 'px-2.5 py-1 rounded-lg text-slate-400 hover:text-rose-400';
+    filterCredits.className = 'px-2 py-0.5 rounded-lg bg-accent-500/20 text-accent-300 font-medium';
+    filterAll.className = 'px-2 py-0.5 rounded-lg text-[#71717a] hover:text-white';
+    filterDebits.className = 'px-2 py-0.5 rounded-lg text-[#71717a] hover:text-rose-400';
     renderInboxDrawer();
 });
 
-// 5. System Reconciliation Audit
-async function runReconciliationAudit() {
-    try {
-        const res = await apiCall('/ledger/reconciliation', {}, true);
-        if (!res) return;
-
-        auditDebits.textContent = `৳ ${parseFloat(res.total_debits_bdt).toFixed(2)}`;
-        auditCredits.textContent = `৳ ${parseFloat(res.total_credits_bdt).toFixed(2)}`;
-        auditDiff.textContent = `${res.difference_bdt} BDT`;
-
-        if (res.is_balanced) {
-            auditBadge.className = 'text-xs font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20';
-            auditBadge.textContent = '100% BALANCED';
-            auditDiff.className = 'text-emerald-400 font-bold';
-        } else {
-            auditBadge.className = 'text-xs font-mono px-2 py-0.5 rounded bg-rose-500/10 text-rose-400 border border-rose-500/20';
-            auditBadge.textContent = 'DISCREPANCY';
-            auditDiff.className = 'text-rose-400 font-bold';
-        }
-
-        // Fetch scaling metrics
-        try {
-            const metrics = await apiCall('/scaling/metrics', {}, true);
-            if (metrics && metrics.connections) {
-                const poolStatus = document.getElementById('db-pool-status');
-                if (poolStatus) {
-                    poolStatus.textContent = `${metrics.connections.current_active}/${metrics.connections.max_allowed} (${metrics.connections.utilization_percent}%)`;
-                }
-            }
-        } catch (e) {}
-    } catch (e) {}
-}
-btnRunReconciliation.addEventListener('click', async () => {
-    await runReconciliationAudit();
-    showToast('System reconciliation verified: Total Debits == Total Credits.', 'success');
-});
-
-// ── Concurrency Stress Test Arena ──────────────────────────────────────────
-function openStressModal() {
-    modalStressTest.classList.remove('hidden');
-    stressResultsArea.classList.add('hidden');
-}
-
-function closeStressModal() {
-    modalStressTest.classList.add('hidden');
-}
-
-btnOpenStressTestNav.addEventListener('click', openStressModal);
-btnCloseStressModal.addEventListener('click', closeStressModal);
-
-// Close on backdrop click
-modalStressTest.addEventListener('click', (e) => {
-    if (e.target === modalStressTest) closeStressModal();
-});
-
-// Execute Parallel Requests
-btnExecuteStressTest.addEventListener('click', async () => {
-    const recipient = stressRecipientInput.value.trim() || 'bob';
-    const numThreads = 10;
-    const amountPerThread = 20000.00;
-
-    // Ensure recipient exists
-    try {
-        await apiCall('/auth/register', {
-            method: 'POST',
-            body: JSON.stringify({ username: recipient, password: 'password123' })
-        }, true);
-    } catch (e) {
-        // Recipient likely already registered, safe to proceed
-    }
-
-    const startBalance = await refreshBalance();
-    
-    btnExecuteStressTest.disabled = true;
-    btnExecuteStressTest.innerHTML = `<span class="animate-spin inline-block mr-2">⚡</span> Firing 10 Simultaneous Requests Across Database Connections...`;
-    stressResultsArea.classList.remove('hidden');
-    stressThreadsLog.innerHTML = `<div class="text-slate-500 animate-pulse">Launching Promise.all with 10 concurrent requests...</div>`;
-    stressResStart.textContent = `৳ ${startBalance.toFixed(2)}`;
-
-    // Prepare 10 concurrent requests with unique UUID idempotency keys
-    const requests = Array.from({ length: numThreads }).map((_, index) => {
-        const idempKey = typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : `stress-${Date.now()}-${index}-${Math.random()}`;
-        return apiCall('/transfers/send', {
-            method: 'POST',
-            headers: { 'Idempotency-Key': idempKey },
-            body: JSON.stringify({
-                recipient_username: recipient,
-                amount_bdt: amountPerThread.toFixed(2),
-                note: `Live Concurrency Test Thread #${index + 1}`
-            })
-        }, true).then(res => ({
-            thread: index + 1,
-            status: 'SUCCESS',
-            amount: amountPerThread,
-            detail: res
-        })).catch(err => ({
-            thread: index + 1,
-            status: 'BLOCKED',
-            reason: err.message || 'Insufficient balance',
-            detail: err
-        }));
-    });
-
-    // Fire all 10 simultaneously
-    const results = await Promise.all(requests);
-
-    // Analyze results
-    const succeeded = results.filter(r => r.status === 'SUCCESS');
-    const blocked = results.filter(r => r.status === 'BLOCKED');
-
-    stressResSuccess.textContent = `${succeeded.length} / ${numThreads}`;
-    stressResFailed.textContent = `${blocked.length} / ${numThreads}`;
-
-    const endBalance = await refreshBalance();
-    stressResEnd.textContent = `৳ ${endBalance.toFixed(2)}`;
-
-    // Check invariants
-    const zeroNegativeBalance = endBalance >= 0;
-
-    if (zeroNegativeBalance) {
-        stressSummaryBadge.className = 'text-xs font-mono px-2.5 py-0.5 rounded font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30';
-        stressSummaryBadge.textContent = `PERFECT SERIALIZATION (${succeeded.length} Settled, ${blocked.length} Protected)`;
-    } else {
-        stressSummaryBadge.className = 'text-xs font-mono px-2.5 py-0.5 rounded font-bold bg-rose-500/20 text-rose-400 border border-rose-500/30';
-        stressSummaryBadge.textContent = 'RACE CONDITION DETECTED';
-    }
-
-    // Render thread logs
-    stressThreadsLog.innerHTML = results.map(r => {
-        if (r.status === 'SUCCESS') {
-            return `
-                <div class="flex items-center justify-between p-2 rounded-lg bg-emerald-950/40 border border-emerald-500/20 text-emerald-300">
-                    <div class="flex items-center space-x-2">
-                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-                        <span class="font-bold">Thread #${r.thread}:</span>
-                        <span>HTTP 200 OK</span>
-                    </div>
-                    <span class="font-mono text-emerald-400">-৳${r.amount.toFixed(2)} (Settled)</span>
-                </div>
-            `;
-        } else {
-            return `
-                <div class="flex items-center justify-between p-2 rounded-lg bg-slate-900 border border-slate-800 text-slate-400">
-                    <div class="flex items-center space-x-2">
-                        <span class="w-1.5 h-1.5 rounded-full bg-rose-400"></span>
-                        <span class="font-bold text-slate-300">Thread #${r.thread}:</span>
-                        <span class="text-rose-300 font-semibold">HTTP 400</span>
-                    </div>
-                    <span class="font-mono text-slate-500 text-[10px]">${escapeHtml(r.reason)}</span>
-                </div>
-            `;
-        }
-    }).join('');
-
-    triggerNewInboxNotification();
-    await Promise.all([
-        refreshRequests(),
-        refreshLedgerHistory(),
-        runReconciliationAudit()
-    ]);
-
-    btnExecuteStressTest.disabled = false;
-    btnExecuteStressTest.innerHTML = `<span>🔥 Execute 10 Parallel Transfers Now (Promise.all)</span>`;
-    showToast(`Concurrency stress test complete: ${succeeded.length} succeeded, ${blocked.length} blocked cleanly!`, 'success');
-});
-
-// ── UI Helpers ─────────────────────────────────────────────────────────────
-btnTabSend.addEventListener('click', () => {
-    btnTabSend.className = 'flex-1 py-2.5 text-xs font-semibold rounded-xl bg-brand-600 text-white shadow transition-all';
-    btnTabRequest.className = 'flex-1 py-2.5 text-xs font-semibold rounded-xl text-slate-400 hover:text-white transition-all';
-    panelSend.classList.remove('hidden');
-    panelRequest.classList.add('hidden');
-});
-
-btnTabRequest.addEventListener('click', () => {
-    btnTabRequest.className = 'flex-1 py-2.5 text-xs font-semibold rounded-xl bg-indigo-600 text-white shadow transition-all';
-    btnTabSend.className = 'flex-1 py-2.5 text-xs font-semibold rounded-xl text-slate-400 hover:text-white transition-all';
-    panelRequest.classList.remove('hidden');
-    panelSend.classList.add('hidden');
-});
-
-subtabIncoming.addEventListener('click', () => {
-    subtabIncoming.className = 'pb-2 text-brand-400 border-b-2 border-brand-500 mr-4 transition-colors';
-    subtabOutgoing.className = 'pb-2 text-slate-400 hover:text-slate-200 border-b-2 border-transparent transition-colors';
-    containerIncoming.classList.remove('hidden');
-    containerOutgoing.classList.add('hidden');
-});
-
-subtabOutgoing.addEventListener('click', () => {
-    subtabOutgoing.className = 'pb-2 text-indigo-400 border-b-2 border-indigo-500 transition-colors';
-    subtabIncoming.className = 'pb-2 text-slate-400 hover:text-slate-200 border-b-2 border-transparent mr-4 transition-colors';
-    containerOutgoing.classList.remove('hidden');
-    containerIncoming.classList.add('hidden');
-});
-
+// ── Helpers ────────────────────────────────────────────────────────────────
 function formatTime(isoStr) {
     if (!isoStr) return '';
     try {
         const d = new Date(isoStr);
-        return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) + ' ' + d.toLocaleDateString();
+        return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ' ' + d.toLocaleDateString([], { month: 'short', day: 'numeric' });
     } catch {
         return isoStr;
     }

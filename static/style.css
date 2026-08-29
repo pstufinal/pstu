@@ -1,37 +1,45 @@
-/* Custom styles for PayPulse UI */
+/* PayPulse Modern Minimal Theme */
 
-body {
-    background-color: #030712;
+:root {
+    --bg-primary: #0f1113;
+    --bg-card: #15181d;
+    --border-color: #262b33;
+    --accent: #10b981;
 }
 
-/* Custom scrollbar */
+body {
+    background-color: var(--bg-primary);
+    color: #e4e4e7;
+}
+
+/* Custom minimal scrollbar */
 ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+    width: 5px;
+    height: 5px;
 }
 
 ::-webkit-scrollbar-track {
-    background: #0b0f19;
+    background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-    background: #1e293b;
+    background: #272c35;
     border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: #334155;
+    background: #3f4756;
 }
 
 /* Smooth fade in */
 .fade-in {
-    animation: fadeIn 0.2s ease-in-out forwards;
+    animation: fadeIn 0.15s ease-in-out forwards;
 }
 
 @keyframes fadeIn {
     from {
         opacity: 0;
-        transform: translateY(4px);
+        transform: translateY(3px);
     }
     to {
         opacity: 1;
@@ -50,5 +58,5 @@ body {
 }
 
 .animate-slide-left {
-    animation: slideLeft 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    animation: slideLeft 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
