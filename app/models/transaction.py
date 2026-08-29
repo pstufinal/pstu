@@ -16,10 +16,10 @@ class Transaction(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     sender_wallet_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("wallets.id"), nullable=False
+        Integer, ForeignKey("wallets.id"), nullable=False, index=True
     )
     recipient_wallet_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("wallets.id"), nullable=False
+        Integer, ForeignKey("wallets.id"), nullable=False, index=True
     )
     # Why NUMERIC: same reason as wallet balance — exact arithmetic, no float drift.
     amount_bdt: Mapped[Decimal] = mapped_column(Numeric(15, 2), nullable=False)
@@ -47,10 +47,10 @@ class LedgerEntry(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     transaction_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("transactions.id"), nullable=False
+        Integer, ForeignKey("transactions.id"), nullable=False, index=True
     )
     wallet_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("wallets.id"), nullable=False
+        Integer, ForeignKey("wallets.id"), nullable=False, index=True
     )
     # Why VARCHAR not ENUM: easier to add new entry types later without an ALTER TYPE migration.
     entry_type: Mapped[str] = mapped_column(String(10), nullable=False)  # DEBIT or CREDIT

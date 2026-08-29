@@ -12,6 +12,7 @@ import app.models  # noqa: F401 — triggers model registration
 
 from app.api.routes_auth import router as auth_router
 from app.api.routes_requests import router as request_router
+from app.api.routes_scaling import router as scaling_router
 from app.api.routes_transfers import router as transfer_router
 from app.database import Base, engine
 
@@ -38,6 +39,7 @@ app = FastAPI(
 app.include_router(auth_router)
 app.include_router(transfer_router)
 app.include_router(request_router)
+app.include_router(scaling_router)
 
 
 # ── Global exception handler ─────────────────────────────────────────────────
