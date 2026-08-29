@@ -111,3 +111,63 @@ This file documents all AI prompts used during development, as required by the P
 **What the AI produced:** The entire backend skeleton (31 files), including all models, services, routes, race-condition test, README, and this prompt log.
 
 **What the humans decided:** Architecture (monolith), stack (FastAPI + SQLAlchemy sync), concurrency strategy (SELECT FOR UPDATE + ascending lock order), all engineering constraints, variable naming conventions, and every design trade-off.
+
+---
+
+## 3. Escrow Feature (Trust Layer)
+
+**Prompt:**
+> Add an ESCROW feature to my FastAPI + PostgreSQL money app.
+> Context you must respect: we already have users, wallets (NUMERIC(15,2)),
+> a double-entry ledger (transactions + ledger_entries), idempotency keys,
+> and row locking with SELECT ... FOR UPDATE in ascending wallet id order.
+> Escrow must reuse this exact pipeline. Do NOT rewrite existing transfer logic.
+> 
+> BD reason (put this sentence in README): "Bangladesh f-commerce runs on
+> Facebook trust - buyers fear paying for goods that never arrive, sellers
+> fear shipping without payment. Escrow makes this app the trust layer."
+> 
+> Build exactly this:
+> 
+> 1. System wallet username "ESCROW_HOLD", created at startup if missing.
+> 2. Table escrow_payments: id, buyer_user_id FK, seller_user_id FK,
+>    amount NUMERIC(15,2), status (HELD / RELEASED / REFUNDED),
+>    idempotency_key unique, note, created_at, decided_at.
+> 3. transactions table: if a type column does not exist, add it with values
+>    TRANSFER | ESCROW_HOLD | ESCROW_RELEASE | ESCROW_REFUND
+>    (default TRANSFER, old rows unaffected).
+> 
+> Endpoints:
+> POST /escrow/payments {seller_username, amount_bdt, note?}
+>    + Idempotency-Key header -> buyer pays into escrow (status HELD)
+> POST /escrow/payments/{id}/release -> buyer only, only from HELD
+> POST /escrow/payments/{id}/cancel  -> buyer only, only from HELD (refund)
+> GET  /escrow/payments -> list where I am buyer or seller
+> 
+> State machine rules (one-line WHY comment on each):
+> - release/cancel load the escrow row with FOR UPDATE and continue only
+>   if status == HELD, otherwise 409
+> - seller can NOT release or cancel (403)
+> - every money move = ONE DB transaction, wallets locked in ascending id
+>   order (only the wallets involved), 2 ledger entries per move:
+>   HOLD:    DEBIT buyer,  CREDIT escrow
+>   RELEASE: DEBIT escrow, CREDIT seller
+>   REFUND:  DEBIT escrow, CREDIT buyer
+> - Decimal only, no floats, clean 4xx JSON, no stack traces
+> 
+> Tests in tests/test_escrow.py, all must pass:
+> - hold 2000 then release: buyer 98000, seller 102000 (start 100000 each)
+> - hold 2000 then cancel: buyer back to 100000
+> - second release attempt -> 409, balances unchanged
+> - seller tries release -> 403
+> - 10 threads release the same escrow concurrently -> exactly one 200,
+>   nine 409, seller credited exactly once
+> - the original 20-thread transfer race test must still pass
+> 
+> Docs:
+> - README section "Escrow - trust layer for BD f-commerce"
+> - append this whole prompt to docs/AI_PROMPTS.md as a new logged entry
+> 
+> Finish with the exact curl demo sequence (register alice + bob, hold 2000,
+> show balances, release, show balances, then a second escrow that gets
+> cancelled) with the expected numbers written next to each command.

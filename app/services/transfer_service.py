@@ -24,6 +24,7 @@ def execute_transfer(
     amount_bdt: Decimal,
     idempotency_key: str,
     note: str | None = None,
+    transaction_type: str = "TRANSFER",
 ) -> dict:
     """
     Why one DB transaction for the whole transfer: partial state (money debited
@@ -108,6 +109,7 @@ def execute_transfer(
         amount_bdt=amount_bdt,
         note=note,
         idempotency_key=idempotency_key,
+        type=transaction_type,
     )
     db.add(transaction)
     # Why flush here: we need transaction.id for the ledger entries, but we
