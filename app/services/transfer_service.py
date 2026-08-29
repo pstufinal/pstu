@@ -74,12 +74,14 @@ def execute_transfer(
         db.query(Wallet)
         .filter_by(id=wallet_ids_sorted[0])
         .with_for_update()
+        .populate_existing()
         .first()
     )
     second_locked = (
         db.query(Wallet)
         .filter_by(id=wallet_ids_sorted[1])
         .with_for_update()
+        .populate_existing()
         .first()
     )
 
