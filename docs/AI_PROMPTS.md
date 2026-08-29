@@ -172,7 +172,25 @@ Finish by running the script once and showing me its output.
 ```
 Result: Created bash/ps1 scripts fetching from /scaling/metrics.
 
-## ENTRY 9 — OPEN LOG (append every future prompt BEFORE using it)
+## ENTRY 9 — Frontend Integration (Teammate branch merge)
+Prompt: 
+You are integrating a teammate's frontend branch into my frozen FastAPI +
+PostgreSQL money app. The backend is LOCKED: any change outside the rules
+below is forbidden. Goal: UI and backend speak one exact money contract,
+and the 13-step demo_all.py passes with zero failures. No npm, no build
+step, no new dependencies.
+
+CONTEXT: main = frozen backend (Decimal, NUMERIC(15,2), row locking,
+double-entry ledger, idempotency, escrow, trx codes, verify link, request
+hardening, demo_all.py, stress tests). This branch = teammate's static UI
+(toasts, inbox drawer, requests tabs, scaling card, concurrency arena)
+plus small backend schema tweaks for integer amounts.
+... (Full prompt in conversation history) ...
+
+AI generated: implementation plan, removed frontend's integer parsing logic, added escrow UI and scaling metrics.
+Human decisions: Approved the plan, enforcing the main backend contract without breaking demo_all.py.
+
+## ENTRY 10 — OPEN LOG (append every future prompt BEFORE using it)
 ```text
 ## ENTRY N — <purpose> | date/time
 Prompt: <paste verbatim>

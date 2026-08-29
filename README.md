@@ -75,6 +75,7 @@ To run the complete 13-step global integration test demonstrating all features, 
 python demo_all.py
 ```
 Scaling is demonstrated from the terminal: `.\demo_scaling.ps1`
+Frontend: static UI served by FastAPI; money rendered as server-side strings; integer-taka input by design.
 
 When a buyer creates an Escrow payment:
 1. Funds are locked into a central `ESCROW_HOLD` system wallet (creating a double-entry debit/credit).
