@@ -25,6 +25,7 @@ class TransferRequest(BaseModel):
 
 class TransferResponse(BaseModel):
     transaction_id: int
+    trx_code: str
     sender: str
     recipient: str
     amount_bdt: str

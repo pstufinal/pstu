@@ -23,6 +23,11 @@ class Transaction(Base):
     )
     # Why NUMERIC: same reason as wallet balance — exact arithmetic, no float drift.
     amount_bdt: Mapped[Decimal] = mapped_column(Numeric(15, 2), nullable=False)
+    # Why type column: distinguishes regular transfers from escrow hold/release/refund
+    # without needing complex joins or new tables.
+    type: Mapped[str] = mapped_column(String(20), nullable=False, server_default="TRANSFER")
+    # Why trx_code: Every BD user recognizes a TrxID instantly - we speak the local money language.
+    trx_code: Mapped[str] = mapped_column(String(15), unique=True, nullable=False, index=True)
     note: Mapped[str | None] = mapped_column(String(255), nullable=True)
     # Why unique constraint on idempotency_key: DB-level guarantee against double-charge,
     # even if the application-level check races with a concurrent request.
