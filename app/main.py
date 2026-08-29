@@ -40,6 +40,12 @@ app.include_router(transfer_router)
 app.include_router(request_router)
 
 
+@app.get("/health")
+def health_check():
+    """Liveness probe for monitoring."""
+    return {"status": "healthy"}
+
+
 # ── Global exception handler ─────────────────────────────────────────────────
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
@@ -56,7 +62,12 @@ async def global_exception_handler(request: Request, exc: Exception):
     )
 
 
-@app.get("/health")
-def health_check():
-    """Liveness probe for monitoring."""
-    return {"status": "healthy"}
+# ── Mount static files for Web UI (must be last to allow API routes to match first) ───
+import os
+from fastapi.staticfiles import StaticFiles
+
+static_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "static")
+if not os.path.exists(static_dir):
+    os.makedirs(static_dir, exist_ok=True)
+app.mount("/", StaticFiles(directory=static_dir, html=True), name="static")
+

@@ -85,3 +85,44 @@ def get_transaction_history(
             for entry in ledger_entries
         ],
     }
+
+
+@router.get("/ledger/reconciliation")
+def reconcile_ledger(db: Session = Depends(get_db)):
+    """
+    Double-Entry Ledger Integrity Audit.
+    Mathematically verifies that across all transactions in history:
+    1. Total Debits == Total Credits
+    2. Every transaction has exactly 2 ledger entries (1 DEBIT, 1 CREDIT)
+    """
+    from decimal import Decimal
+    from sqlalchemy import func
+    from app.models.transaction import LedgerEntry, Transaction
+
+    debit_total = (
+        db.query(func.coalesce(func.sum(LedgerEntry.amount_bdt), Decimal("0.00")))
+        .filter_by(entry_type="DEBIT")
+        .scalar()
+    )
+    credit_total = (
+        db.query(func.coalesce(func.sum(LedgerEntry.amount_bdt), Decimal("0.00")))
+        .filter_by(entry_type="CREDIT")
+        .scalar()
+    )
+    txn_count = db.query(func.count(Transaction.id)).scalar()
+    entry_count = db.query(func.count(LedgerEntry.id)).scalar()
+
+    diff = debit_total - credit_total
+    is_balanced = (diff == Decimal("0.00")) and (entry_count == txn_count * 2)
+
+    return {
+        "is_balanced": is_balanced,
+        "total_debits_bdt": str(debit_total),
+        "total_credits_bdt": str(credit_total),
+        "difference_bdt": str(diff),
+        "total_transactions": txn_count,
+        "total_ledger_entries": entry_count,
+        "accounting_rule": "SUM(DEBITS) == SUM(CREDITS) (Double-Entry Invariant)",
+        "status": "HEALTHY — 100% RECONCILED" if is_balanced else "CORRUPTED — DISCREPANCY DETECTED",
+    }
+

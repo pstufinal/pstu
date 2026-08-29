@@ -141,3 +141,54 @@ def reject_money_request(
         "status": "rejected",
         "message": "Money request rejected.",
     }
+
+
+def list_user_requests(db: Session, user_id: int) -> dict:
+    """
+    Retrieve all incoming and outgoing money requests for the user.
+    """
+    # Incoming requests where this user is the payer
+    incoming_objs = (
+        db.query(MoneyRequest)
+        .filter_by(payer_user_id=user_id)
+        .order_by(MoneyRequest.created_at.desc())
+        .all()
+    )
+    # Outgoing requests where this user is the requester
+    outgoing_objs = (
+        db.query(MoneyRequest)
+        .filter_by(requester_user_id=user_id)
+        .order_by(MoneyRequest.created_at.desc())
+        .all()
+    )
+
+    # Collect user IDs to resolve usernames in bulk
+    all_user_ids = {r.requester_user_id for r in incoming_objs} | {r.payer_user_id for r in outgoing_objs}
+    user_map = {u.id: u.username for u in db.query(User).filter(User.id.in_(all_user_ids)).all()} if all_user_ids else {}
+
+    incoming = [
+        {
+            "request_id": r.id,
+            "requester_username": user_map.get(r.requester_user_id, "Unknown"),
+            "amount_bdt": str(r.amount_bdt),
+            "note": r.note,
+            "status": r.status,
+            "created_at": r.created_at.isoformat() if r.created_at else None,
+        }
+        for r in incoming_objs
+    ]
+
+    outgoing = [
+        {
+            "request_id": r.id,
+            "payer_username": user_map.get(r.payer_user_id, "Unknown"),
+            "amount_bdt": str(r.amount_bdt),
+            "note": r.note,
+            "status": r.status,
+            "created_at": r.created_at.isoformat() if r.created_at else None,
+        }
+        for r in outgoing_objs
+    ]
+
+    return {"incoming": incoming, "outgoing": outgoing}
+

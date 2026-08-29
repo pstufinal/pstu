@@ -17,6 +17,16 @@ from app.services.request_service import (
 router = APIRouter(prefix="/money-requests", tags=["money-requests"])
 
 
+@router.get("")
+def get_user_requests(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """List all incoming and outgoing money requests for the authenticated user."""
+    from app.services.request_service import list_user_requests
+    return list_user_requests(db=db, user_id=current_user.id)
+
+
 @router.post("")
 def create_request(
     body: MoneyRequestCreate,
