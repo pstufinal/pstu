@@ -5,6 +5,18 @@
 python demo_all.py
 ```
 
+## Scaling proof (terminal)
+```powershell
+# Windows
+.\demo_scaling.ps1
+
+# Bash
+./demo_scaling.sh
+
+# Raw one-liner
+Invoke-RestMethod http://localhost:8000/scaling/metrics | ConvertTo-Json -Depth 5
+```
+
 ## TrxID Verification (Public Proof-of-Payment)
 
 ```powershell

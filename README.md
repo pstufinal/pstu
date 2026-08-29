@@ -74,6 +74,7 @@ To run the complete 13-step global integration test demonstrating all features, 
 ```bash
 python demo_all.py
 ```
+Scaling is demonstrated from the terminal: `.\demo_scaling.ps1`
 
 When a buyer creates an Escrow payment:
 1. Funds are locked into a central `ESCROW_HOLD` system wallet (creating a double-entry debit/credit).

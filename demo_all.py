@@ -7,7 +7,7 @@ import urllib.request
 import urllib.error
 import uuid
 from decimal import Decimal
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine, text  # type: ignore
 
 BASE_URL = "http://localhost:8000"
 DB_URL = "postgresql://postgres:postgres@localhost:5432/moneymove"
