@@ -189,4 +189,16 @@ pytest tests/test_race_condition.py -v
 | POST | `/money-requests/{id}/approve` | Payer approves the request |
 | POST | `/money-requests/{id}/reject` | Payer rejects the request |
 | GET | `/transactions/history` | Ledger entries for current user |
+| GET | `/verify/{trx_code}` | Public proof-of-payment verification |
+| GET | `/scaling/metrics` | Real-time database connection and table size metrics |
 | GET | `/health` | Liveness probe |
+
+---
+
+## Web UI Dashboard
+
+The application serves a sleek, responsive Single Page Application (SPA) directly at `http://127.0.0.1:8000/`:
+- **Real-Time Balance & Account Hero**: Instant wallet updates in integer BDT.
+- **P2P Transfer Engine**: Send money with atomic row-locking and auto-generated UUID idempotency keys.
+- **3-Way Money Request Center**: Create requests, pay/reject incoming requests, and track sent requests (`PENDING`, `PAID`, `REJECTED`).
+- **Live Transaction Inbox**: Real-time pop-up notification drawer with `SENT` and `RECEIVED` ledger activity.
