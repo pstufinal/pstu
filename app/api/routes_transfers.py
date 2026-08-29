@@ -2,7 +2,7 @@
 Transfer and wallet routes: send money, check balance, view history.
 """
 from fastapi import APIRouter, Depends, Header, HTTPException
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from app.core.security import get_current_user
 from app.database import get_db, get_read_db
@@ -63,6 +63,7 @@ def get_transaction_history(
 
     ledger_entries = (
         db.query(LedgerEntry)
+        .options(joinedload(LedgerEntry.transaction))
         .filter_by(wallet_id=wallet.id)
         .order_by(LedgerEntry.created_at.desc())
         .all()
@@ -75,6 +76,7 @@ def get_transaction_history(
             {
                 "ledger_entry_id": entry.id,
                 "transaction_id": entry.transaction_id,
+                "trx_code": entry.transaction.trx_code,
                 "entry_type": entry.entry_type,
                 "amount_bdt": str(entry.amount_bdt),
                 "balance_after": str(entry.balance_after),

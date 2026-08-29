@@ -13,9 +13,11 @@ class MoneyRequestCreate(BaseModel):
 
     @field_validator("amount_bdt")
     @classmethod
-    def amount_must_be_positive(cls, value: Decimal) -> Decimal:
-        if value <= 0:
-            raise ValueError("Amount must be positive.")
+    def amount_must_be_valid(cls, value: Decimal) -> Decimal:
+        from app.config import settings
+        # WHY: a negative request amount would invert the transfer direction
+        if value <= 0 or value > settings.MAX_REQUEST_AMOUNT:
+            raise ValueError(f"Amount must be > 0 and <= {settings.MAX_REQUEST_AMOUNT}.")
         return value
 
 

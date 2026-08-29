@@ -15,6 +15,7 @@ from app.core.money import validate_amount
 from app.models.transaction import IdempotencyRecord, LedgerEntry, Transaction
 from app.models.user import User
 from app.models.wallet import Wallet
+from app.utils.trx import generate_trx_code
 
 
 def execute_transfer(
@@ -102,7 +103,8 @@ def execute_transfer(
     sender_wallet_locked.balance -= amount_bdt
     recipient_wallet_locked.balance += amount_bdt
 
-    # ── Create transaction record ─────────────────────────────────────────────
+    # ── Create the Transaction record ─────────────────────────────────────────
+    trx_code = generate_trx_code()
     transaction = Transaction(
         sender_wallet_id=sender_wallet_locked.id,
         recipient_wallet_id=recipient_wallet_locked.id,
@@ -110,6 +112,7 @@ def execute_transfer(
         note=note,
         idempotency_key=idempotency_key,
         type=transaction_type,
+        trx_code=trx_code,
     )
     db.add(transaction)
     # Why flush here: we need transaction.id for the ledger entries, but we
@@ -138,6 +141,7 @@ def execute_transfer(
     # ── Build response payload ────────────────────────────────────────────────
     response_data = {
         "transaction_id": transaction.id,
+        "trx_code": trx_code,
         "sender": sender_user.username,
         "recipient": recipient_user.username,
         "amount_bdt": str(amount_bdt.quantize(Decimal("0.01"))),

@@ -70,18 +70,25 @@ def approve_money_request(
     The money_request.status = 'approved' update lives in the same DB session
     as the transfer, so both commit atomically.
     """
-    money_request = db.query(MoneyRequest).filter_by(id=request_id).first()
+    # WHY: locked status transitions make double-approve impossible - user input is never trusted.
+    money_request = (
+        db.query(MoneyRequest)
+        .filter_by(id=request_id)
+        .with_for_update()
+        .populate_existing()
+        .first()
+    )
     if money_request is None:
         raise HTTPException(status_code=404, detail="Money request not found.")
+
+    if money_request.status != "pending":
+        raise HTTPException(
+            status_code=409, detail=f"Request already {money_request.status}."
+        )
 
     if money_request.payer_user_id != approver_user_id:
         raise HTTPException(
             status_code=403, detail="Only the payer can approve this request."
-        )
-
-    if money_request.status != "pending":
-        raise HTTPException(
-            status_code=400, detail=f"Request already {money_request.status}."
         )
 
     # Mark as approved. This dirty-flag sits in the same SQLAlchemy session,
@@ -119,18 +126,25 @@ def reject_money_request(
     Why only the payer can reject: prevents the requester from cancelling
     their own request to hide evidence of a social-engineering attempt.
     """
-    money_request = db.query(MoneyRequest).filter_by(id=request_id).first()
+    # WHY: locked status transitions make double-approve impossible - user input is never trusted.
+    money_request = (
+        db.query(MoneyRequest)
+        .filter_by(id=request_id)
+        .with_for_update()
+        .populate_existing()
+        .first()
+    )
     if money_request is None:
         raise HTTPException(status_code=404, detail="Money request not found.")
+
+    if money_request.status != "pending":
+        raise HTTPException(
+            status_code=409, detail=f"Request already {money_request.status}."
+        )
 
     if money_request.payer_user_id != rejector_user_id:
         raise HTTPException(
             status_code=403, detail="Only the payer can reject this request."
-        )
-
-    if money_request.status != "pending":
-        raise HTTPException(
-            status_code=400, detail=f"Request already {money_request.status}."
         )
 
     money_request.status = "rejected"

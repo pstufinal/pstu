@@ -68,6 +68,13 @@ Every `/transfers/send` request **must** include an `Idempotency-Key` header (ty
 
 Bangladesh f-commerce runs on Facebook trust - buyers fear paying for goods that never arrive, sellers fear shipping without payment. Escrow makes this app the trust layer.
 
+## Full System Demo
+
+To run the complete 13-step global integration test demonstrating all features, run:
+```bash
+python demo_all.py
+```
+
 When a buyer creates an Escrow payment:
 1. Funds are locked into a central `ESCROW_HOLD` system wallet (creating a double-entry debit/credit).
 2. The seller is notified that funds are secured.

@@ -171,3 +171,122 @@ This file documents all AI prompts used during development, as required by the P
 > Finish with the exact curl demo sequence (register alice + bob, hold 2000,
 > show balances, release, show balances, then a second escrow that gets
 > cancelled) with the expected numbers written next to each command.
+
+---
+
+## Entry 4 — TrxID + public verify link
+Date: 2026-08-29 | PSTU Final Round | Hour ~4-5
+Purpose: two micro killer-features on top of the proven core, without touching transfer/escrow logic.
+
+### PROMPT (pasted verbatim into the AI tool)
+
+Add two small features to my FastAPI + PostgreSQL money app.
+Do NOT change existing transfer/escrow logic except where stated.
+After both features, the 20-thread transfer race test and the 10-thread
+escrow test must still pass. Decimal only, no new dependencies, no Docker.
+
+FEATURE 1 — bKash-style TrxID:
+- add column trx_code to the transactions table, unique, not null
+- format: "PST26-" + 6 random chars from A-Z and 2-9 (no 0, 1, O, I)
+- generate in Python when creating TRANSFER, ESCROW_HOLD,
+  ESCROW_RELEASE, ESCROW_REFUND rows
+- if any old rows have null trx_code, backfill them at startup
+- return trx_code in: transfer response, escrow responses, and every
+  item of GET /transactions/history
+- WHY comment: "Every BD user recognizes a TrxID instantly -
+  we speak the local money language."
+
+FEATURE 2 — public verify link (anti fake-screenshot fraud):
+- GET /verify/{trx_code} - NO auth, read-only
+- returns JSON: trx_code, type, amount (string with 2 decimals),
+  status, created_at, sender_masked, receiver_masked
+- masking rule: first 3 chars of username + "***" (example: "ali***")
+- unknown trx_code -> 404 with clean JSON
+- return NOTHING else: no balances, no history, no internal ids
+- WHY comment: "Public proof-of-payment kills fake payment
+  screenshots in BD f-commerce."
+
+Also:
+- append 3 curl lines to TEST_COMMANDS.md (verify a transfer,
+  verify an escrow release, one 404 case) with expected output
+- finish with the exact curl demo sequence for both features and
+  the expected JSON of each call
+
+### What the AI generated
+- trx_code column + generator + startup backfill
+- GET /verify/{trx_code} read-only endpoint
+- TEST_COMMANDS.md additions
+
+### Human decisions (NOT AI)
+- Chose these two features as the final feature set; backend frozen after this
+- Masking rule (3 chars + ***), auth-free read-only design,
+  amount returned as string to avoid float JSON issues
+- Required both stress tests green before commit
+
+---
+
+## Entry 5 — Final Backend Lockdown & Global Demo Script
+Date: 2026-08-29 | PSTU Final Round | Hour ~5-6
+Purpose: Security hardening and a comprehensive integration testing script.
+
+### PROMPT (pasted verbatim into the AI tool)
+
+Two tasks, in this order. This is the final backend work; after this the
+backend freezes forever. The 20-thread transfer test and the 10-thread
+escrow test must still pass at the end.
+
+TASK 1 - REQUEST-MONEY SECURITY HARDENING (only this, nothing else):
+- POST /money-requests: amount must be > 0 and <= MAX_REQUEST_AMOUNT
+  (config constant 100000.00); requester != payer; payer must exist (404)
+- approve and reject: load the request row with SELECT ... FOR UPDATE,
+  continue only from status pending otherwise 409; only the payer may
+  act otherwise 403
+- WHY comment on each guard: "a negative request amount would invert the
+  transfer direction; locked status transitions make double-approve
+  impossible - user input is never trusted."
+- Do NOT add an audit endpoint. Do NOT add rate limiting. Nothing else.
+
+TASK 2 - GLOBAL DEMO SCRIPT covering every feature:
+Create demo_all.py at repo root. It must:
+- run against the live server at http://localhost:8000 (already running)
+- generate unique usernames per run (timestamp suffix) so it can run
+  repeatedly without resetting the DB
+- print each step: number, what it tests, expected, actual, PASS/FAIL
+- exit code 1 if any step fails
+Steps in this exact order:
+ 1  register 3 users -> each wallet exactly 100000.00
+ 2  login all 3 -> tokens work on GET /wallets/me
+ 3  transfer 2500.00 user1->user2 with Idempotency-Key K1 ->
+    balances 97500.00 / 102500.00; response trx_code matches
+    PST26- plus 6 chars from A-Z and 2-9
+ 4  repeat same K1 -> same transaction, balances unchanged
+ 5  bad transfers: -500 -> 4xx; 999999999 -> 4xx; send to self -> 4xx;
+    ghost recipient -> 404; server still alive after all
+ 6  user2 requests 1200.00 from user1; user1 approves ->
+    96300.00 / 103700.00
+ 7  request security: request -5000 -> 4xx; request 200000 -> 4xx;
+    non-payer approve -> 403; two concurrent approves of one request ->
+    exactly one 200 and one 409, money moves exactly once
+ 8  escrow: user1 holds 2000.00 to user2 -> release -> exact balances;
+    second hold -> cancel -> buyer refunded exactly
+ 9  escrow race: 10 concurrent releases of one held escrow ->
+    exactly one 200, nine 409
+ 10 transfer race: 20 concurrent transfers (10 each direction, 100.00)
+    with unique idempotency keys -> exact expected final balances
+ 11 verify link: GET /verify/{trx_code} from step 3 -> returns type,
+    amount "2500.00", masked usernames (3 chars + "***"); fake trx -> 404
+ 12 ledger invariants via direct DB connection (DATABASE_URL):
+    sum(debits) == sum(credits);
+    sum(all wallet balances) == 100000.00 * number of users;
+    ESCROW_HOLD wallet balance == sum of HELD escrow amounts
+ 13 final line: "ALL CHECKS PASSED - SYSTEM READY FOR JUDGES"
+
+Rules: Decimal only, exact amount comparisons, no floats, no new
+dependencies, short functions with WHY docstrings.
+
+Also:
+- TEST_COMMANDS.md: add the line "python demo_all.py"
+- README: add a "Full System Demo" section with that one command
+- append this entire prompt to docs/AI_PROMPTS.md as a new logged entry
+
+Finish by running demo_all.py yourself and showing me the full output.
