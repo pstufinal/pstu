@@ -38,3 +38,17 @@ body {
         transform: translateY(0);
     }
 }
+
+/* Slide over drawer animation */
+@keyframes slideLeft {
+    from {
+        transform: translateX(100%);
+    }
+    to {
+        transform: translateX(0);
+    }
+}
+
+.animate-slide-left {
+    animation: slideLeft 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}

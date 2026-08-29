@@ -1,6 +1,6 @@
 /**
  * PayPulse Frontend Application Logic
- * Concurrency Stress Testing Arena, Live Ledger Audit, & P2P Money Movement
+ * Real-Time Transaction Inbox Pop-up, Concurrency Stress Arena, & P2P Money Movement
  */
 
 // ── State ──────────────────────────────────────────────────────────────────
@@ -8,6 +8,9 @@ let authToken = localStorage.getItem('paypulse_token') || null;
 let currentUsername = localStorage.getItem('paypulse_username') || null;
 let rawLedgerEntries = [];
 let currentLedgerFilter = 'all';
+let unreadTransactionCount = 0;
+let lastSeenLedgerId = parseInt(localStorage.getItem('paypulse_last_seen_ledger') || '0', 10);
+let pollInterval = null;
 
 // ── DOM Elements ───────────────────────────────────────────────────────────
 const viewAuth = document.getElementById('view-auth');
@@ -46,15 +49,23 @@ const incomingCountBadge = document.getElementById('incoming-count-badge');
 const btnRefreshRequests = document.getElementById('btn-refresh-requests');
 
 // Ledger & Audit
-const tableLedgerBody = document.getElementById('table-ledger-body');
-const btnRefreshHistory = document.getElementById('btn-refresh-history');
 const btnRunReconciliation = document.getElementById('btn-run-reconciliation');
 const auditDebits = document.getElementById('audit-debits');
 const auditCredits = document.getElementById('audit-credits');
 const auditDiff = document.getElementById('audit-diff');
 const auditBadge = document.getElementById('audit-badge');
 
-// Ledger Filters
+// Inbox Drawer Elements
+const drawerInbox = document.getElementById('drawer-inbox');
+const btnToggleInbox = document.getElementById('btn-toggle-inbox');
+const btnOpenInboxCard = document.getElementById('btn-open-inbox-card');
+const btnCloseInbox = document.getElementById('btn-close-inbox');
+const btnMarkInboxRead = document.getElementById('btn-mark-inbox-read');
+const inboxBadge = document.getElementById('inbox-badge');
+const inboxItemsContainer = document.getElementById('inbox-items-container');
+const inboxTotalCount = document.getElementById('inbox-total-count');
+
+// Ledger Filters in Drawer
 const filterAll = document.getElementById('filter-all');
 const filterDebits = document.getElementById('filter-debits');
 const filterCredits = document.getElementById('filter-credits');
@@ -62,7 +73,6 @@ const filterCredits = document.getElementById('filter-credits');
 // Stress Test Modal Elements
 const modalStressTest = document.getElementById('modal-stress-test');
 const btnOpenStressTestNav = document.getElementById('btn-open-stress-test-nav');
-const btnOpenStressTestCard = document.getElementById('btn-open-stress-test-card');
 const btnCloseStressModal = document.getElementById('btn-close-stress-modal');
 const btnExecuteStressTest = document.getElementById('btn-execute-stress-test');
 const stressRecipientInput = document.getElementById('stress-recipient-input');
@@ -157,6 +167,7 @@ function setAuthState(token, username) {
         viewAuth.classList.add('hidden');
         viewDashboard.classList.remove('hidden');
         loadDashboardData();
+        startPolling();
     } else {
         localStorage.removeItem('paypulse_token');
         localStorage.removeItem('paypulse_username');
@@ -164,6 +175,7 @@ function setAuthState(token, username) {
         navUnauthenticated.classList.remove('hidden');
         viewAuth.classList.remove('hidden');
         viewDashboard.classList.add('hidden');
+        stopPolling();
     }
 }
 
@@ -253,10 +265,31 @@ async function loadDashboardData() {
     ]);
 }
 
+// Background auto-refresh
+function startPolling() {
+    stopPolling();
+    pollInterval = setInterval(async () => {
+        if (authToken) {
+            await Promise.all([
+                refreshBalance(),
+                refreshRequests(),
+                refreshLedgerHistory(true)
+            ]);
+        }
+    }, 4000);
+}
+
+function stopPolling() {
+    if (pollInterval) {
+        clearInterval(pollInterval);
+        pollInterval = null;
+    }
+}
+
 // 1. Refresh Balance
 async function refreshBalance() {
     try {
-        const res = await apiCall('/wallets/me');
+        const res = await apiCall('/wallets/me', {}, true);
         if (res && res.balance_bdt) {
             const formatted = parseFloat(res.balance_bdt).toLocaleString('en-US', {
                 minimumFractionDigits: 2,
@@ -307,7 +340,10 @@ formSend.addEventListener('submit', async (e) => {
         if (res) {
             showToast(`Transferred ৳${res.amount_bdt} BDT to ${res.recipient} successfully!`, 'success');
             formSend.reset();
-            loadDashboardData();
+            
+            // Pop up the inbox badge!
+            triggerNewInboxNotification();
+            await loadDashboardData();
         }
     } catch (e) {
     } finally {
@@ -355,7 +391,7 @@ formRequest.addEventListener('submit', async (e) => {
 // 4. Money Requests
 async function refreshRequests() {
     try {
-        const res = await apiCall('/money-requests');
+        const res = await apiCall('/money-requests', {}, true);
         if (!res) return;
 
         const incoming = res.incoming || [];
@@ -429,6 +465,7 @@ window.handleApproveRequest = async function(requestId) {
         });
         if (res) {
             showToast('Payment request approved and funds transferred!', 'success');
+            triggerNewInboxNotification();
             loadDashboardData();
         }
     } catch (e) {}
@@ -448,19 +485,83 @@ window.handleRejectRequest = async function(requestId) {
 
 btnRefreshRequests.addEventListener('click', refreshRequests);
 
-// 5. Ledger History & Filters
-async function refreshLedgerHistory() {
+// ── Transaction Inbox & Notification Pop-up System ─────────────────────────
+function triggerNewInboxNotification() {
+    unreadTransactionCount += 1;
+    updateInboxBadgeUI();
+}
+
+function updateInboxBadgeUI() {
+    if (unreadTransactionCount > 0) {
+        inboxBadge.textContent = `(${unreadTransactionCount})`;
+        inboxBadge.classList.remove('hidden');
+        btnMarkInboxRead.textContent = `Clear (${unreadTransactionCount})`;
+    } else {
+        inboxBadge.classList.add('hidden');
+        btnMarkInboxRead.textContent = `Clear (0)`;
+    }
+}
+
+async function refreshLedgerHistory(isBackground = false) {
     try {
-        const res = await apiCall('/transactions/history');
+        const res = await apiCall('/transactions/history', {}, true);
         if (!res || !res.entries) return;
 
+        const previousLength = rawLedgerEntries.length;
         rawLedgerEntries = res.entries;
-        renderLedgerTable();
+        
+        // Detect new unread entries if new entries arrived
+        if (rawLedgerEntries.length > 0) {
+            const newestId = rawLedgerEntries[0].ledger_entry_id;
+            if (lastSeenLedgerId > 0 && newestId > lastSeenLedgerId) {
+                const countNew = rawLedgerEntries.filter(e => e.ledger_entry_id > lastSeenLedgerId).length;
+                unreadTransactionCount = countNew;
+                updateInboxBadgeUI();
+            }
+        }
+
+        renderInboxDrawer();
     } catch (e) {}
 }
 
-function renderLedgerTable() {
+function openInboxDrawer() {
+    drawerInbox.classList.remove('hidden');
+    // Clear badge count upon opening and persist last seen ID
+    if (rawLedgerEntries.length > 0) {
+        lastSeenLedgerId = rawLedgerEntries[0].ledger_entry_id;
+        localStorage.setItem('paypulse_last_seen_ledger', String(lastSeenLedgerId));
+    }
+    unreadTransactionCount = 0;
+    updateInboxBadgeUI();
+    renderInboxDrawer();
+}
+
+function closeInboxDrawer() {
+    drawerInbox.classList.add('hidden');
+}
+
+btnToggleInbox.addEventListener('click', openInboxDrawer);
+btnOpenInboxCard.addEventListener('click', openInboxDrawer);
+btnCloseInbox.addEventListener('click', closeInboxDrawer);
+btnMarkInboxRead.addEventListener('click', () => {
+    unreadTransactionCount = 0;
+    if (rawLedgerEntries.length > 0) {
+        lastSeenLedgerId = rawLedgerEntries[0].ledger_entry_id;
+        localStorage.setItem('paypulse_last_seen_ledger', String(lastSeenLedgerId));
+    }
+    updateInboxBadgeUI();
+    showToast('Inbox marked as read.');
+});
+
+// Close drawer on backdrop click
+drawerInbox.addEventListener('click', (e) => {
+    if (e.target === drawerInbox) closeInboxDrawer();
+});
+
+function renderInboxDrawer() {
     let entries = rawLedgerEntries;
+    inboxTotalCount.textContent = `${entries.length} total`;
+
     if (currentLedgerFilter === 'debits') {
         entries = entries.filter(e => e.entry_type === 'DEBIT');
     } else if (currentLedgerFilter === 'credits') {
@@ -468,17 +569,15 @@ function renderLedgerTable() {
     }
 
     if (entries.length === 0) {
-        tableLedgerBody.innerHTML = `
-            <tr>
-                <td colspan="6" class="py-8 text-center text-slate-500 font-sans">
-                    No matching ledger entries found.
-                </td>
-            </tr>
+        inboxItemsContainer.innerHTML = `
+            <div class="text-center py-12 text-slate-500 text-xs font-sans">
+                No matching transactions found.
+            </div>
         `;
         return;
     }
 
-    tableLedgerBody.innerHTML = entries.map(entry => {
+    inboxItemsContainer.innerHTML = entries.map(entry => {
         const isDebit = entry.entry_type === 'DEBIT';
         const typeBadge = isDebit
             ? `<span class="px-2 py-0.5 rounded bg-rose-500/10 text-rose-400 border border-rose-500/20 font-bold text-[10px]">DEBIT (-)</span>`
@@ -488,14 +587,25 @@ function renderLedgerTable() {
         const amountSign = isDebit ? '-' : '+';
 
         return `
-            <tr class="hover:bg-slate-800/40 transition">
-                <td class="py-3 px-4 text-slate-400 font-mono">#${entry.ledger_entry_id}</td>
-                <td class="py-3 px-4">${typeBadge}</td>
-                <td class="py-3 px-4 font-bold ${amountColor}">${amountSign} ৳${parseFloat(entry.amount_bdt).toFixed(2)}</td>
-                <td class="py-3 px-4 text-white">৳${parseFloat(entry.balance_after).toFixed(2)}</td>
-                <td class="py-3 px-4 text-slate-400 text-[11px]">TXN #${entry.transaction_id}</td>
-                <td class="py-3 px-4 text-slate-500 text-[11px] font-sans">${formatTime(entry.created_at)}</td>
-            </tr>
+            <div class="p-3.5 rounded-2xl bg-slate-950 border border-slate-800/90 hover:border-slate-700 transition shadow-sm space-y-2 fade-in">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-2">
+                        ${typeBadge}
+                        <span class="text-[11px] font-bold text-slate-300">TXN #${entry.transaction_id}</span>
+                    </div>
+                    <span class="text-xs font-bold font-mono ${amountColor}">
+                        ${amountSign} ৳${parseFloat(entry.amount_bdt).toFixed(2)}
+                    </span>
+                </div>
+
+                <div class="flex items-center justify-between text-[11px] text-slate-400 pt-1 border-t border-slate-900">
+                    <div>
+                        <span class="text-slate-500">Balance After:</span>
+                        <span class="text-white font-mono font-semibold">৳${parseFloat(entry.balance_after).toFixed(2)}</span>
+                    </div>
+                    <span class="text-[10px] text-slate-500 font-sans">${formatTime(entry.created_at)}</span>
+                </div>
+            </div>
         `;
     }).join('');
 }
@@ -505,7 +615,7 @@ filterAll.addEventListener('click', () => {
     filterAll.className = 'px-2.5 py-1 rounded-lg bg-slate-800 text-white font-medium';
     filterDebits.className = 'px-2.5 py-1 rounded-lg text-slate-400 hover:text-rose-400';
     filterCredits.className = 'px-2.5 py-1 rounded-lg text-slate-400 hover:text-emerald-400';
-    renderLedgerTable();
+    renderInboxDrawer();
 });
 
 filterDebits.addEventListener('click', () => {
@@ -513,7 +623,7 @@ filterDebits.addEventListener('click', () => {
     filterDebits.className = 'px-2.5 py-1 rounded-lg bg-rose-500/20 text-rose-300 font-medium border border-rose-500/30';
     filterAll.className = 'px-2.5 py-1 rounded-lg text-slate-400 hover:text-white';
     filterCredits.className = 'px-2.5 py-1 rounded-lg text-slate-400 hover:text-emerald-400';
-    renderLedgerTable();
+    renderInboxDrawer();
 });
 
 filterCredits.addEventListener('click', () => {
@@ -521,18 +631,13 @@ filterCredits.addEventListener('click', () => {
     filterCredits.className = 'px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-300 font-medium border border-emerald-500/30';
     filterAll.className = 'px-2.5 py-1 rounded-lg text-slate-400 hover:text-white';
     filterDebits.className = 'px-2.5 py-1 rounded-lg text-slate-400 hover:text-rose-400';
-    renderLedgerTable();
+    renderInboxDrawer();
 });
 
-btnRefreshHistory.addEventListener('click', () => {
-    refreshLedgerHistory();
-    showToast('Ledger audit trail refreshed.');
-});
-
-// 6. System Reconciliation Audit
+// 5. System Reconciliation Audit
 async function runReconciliationAudit() {
     try {
-        const res = await apiCall('/ledger/reconciliation');
+        const res = await apiCall('/ledger/reconciliation', {}, true);
         if (!res) return;
 
         auditDebits.textContent = `৳ ${parseFloat(res.total_debits_bdt).toFixed(2)}`;
@@ -577,7 +682,6 @@ function closeStressModal() {
 }
 
 btnOpenStressTestNav.addEventListener('click', openStressModal);
-btnOpenStressTestCard.addEventListener('click', openStressModal);
 btnCloseStressModal.addEventListener('click', closeStressModal);
 
 // Close on backdrop click
@@ -648,7 +752,6 @@ btnExecuteStressTest.addEventListener('click', async () => {
 
     // Check invariants
     const zeroNegativeBalance = endBalance >= 0;
-    const expectedSuccessCount = Math.floor(startBalance / amountPerThread);
 
     if (zeroNegativeBalance) {
         stressSummaryBadge.className = 'text-xs font-mono px-2.5 py-0.5 rounded font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30';
@@ -685,6 +788,7 @@ btnExecuteStressTest.addEventListener('click', async () => {
         }
     }).join('');
 
+    triggerNewInboxNotification();
     await Promise.all([
         refreshRequests(),
         refreshLedgerHistory(),
