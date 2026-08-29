@@ -52,8 +52,6 @@ def _create_user_with_wallet(
 
 # ── THE race-condition test ──────────────────────────────────────────────────
 
-import uuid
-
 def test_concurrent_transfers_conserve_money():
     """
     Fire 20 threads simultaneously: 10 send alice→bob (100 BDT) and 10 send
@@ -65,14 +63,10 @@ def test_concurrent_transfers_conserve_money():
       • Neither balance ever went negative.
       • Total money in the system is exactly conserved.
     """
-    test_run_id = uuid.uuid4().hex[:8]
-    alice_username = f"alice_{test_run_id}"
-    bob_username = f"bob_{test_run_id}"
-
     # ── Setup: fresh users that don't collide with manual curl tests ──────────
     setup_db = SessionLocal()
     try:
-        # Clean up any leftover test users
+        # Clean up from previous test runs
         users_to_delete = setup_db.query(User).filter(User.username.in_([ALICE_USERNAME, BOB_USERNAME])).all()
         user_ids = [u.id for u in users_to_delete]
         if user_ids:
@@ -89,8 +83,8 @@ def test_concurrent_transfers_conserve_money():
             setup_db.query(User).filter(User.id.in_(user_ids)).delete(synchronize_session=False)
         setup_db.commit()
 
-        alice_id = _create_user_with_wallet(setup_db, alice_username)
-        bob_id = _create_user_with_wallet(setup_db, bob_username)
+        alice_id = _create_user_with_wallet(setup_db, ALICE_USERNAME)
+        bob_id = _create_user_with_wallet(setup_db, BOB_USERNAME)
         setup_db.commit()
     finally:
         setup_db.close()
@@ -129,12 +123,12 @@ def test_concurrent_transfers_conserve_money():
         for i in range(THREADS_PER_DIRECTION):
             futures.append(
                 pool.submit(
-                    do_transfer, alice_id, bob_username, f"race-ab-{test_run_id}-{i}"
+                    do_transfer, alice_id, BOB_USERNAME, f"race-ab-{i}"
                 )
             )
             futures.append(
                 pool.submit(
-                    do_transfer, bob_id, alice_username, f"race-ba-{test_run_id}-{i}"
+                    do_transfer, bob_id, ALICE_USERNAME, f"race-ba-{i}"
                 )
             )
         for future in as_completed(futures):

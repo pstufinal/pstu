@@ -154,21 +154,6 @@ async function apiCall(endpoint, options = {}, suppressToast = false) {
 }
 
 // ── Strict Integer Validation Helper ───────────────────────────────────────
-function parsePositiveInteger(valStr) {
-    if (!valStr) return null;
-    const clean = valStr.trim();
-    // Rejects decimals, negative signs, letters, scientific notation
-    if (!/^[1-9][0-9]*$/.test(clean)) {
-        return null;
-    }
-    return clean;
-}
-
-function formatIntegerAmount(val) {
-    if (val === null || val === undefined) return '0';
-    const num = parseInt(val, 10);
-    return isNaN(num) ? String(val) : num.toLocaleString('en-US');
-}
 
 // ── Auth Handlers ──────────────────────────────────────────────────────────
 function setAuthState(token, username) {
@@ -231,7 +216,7 @@ formRegister.addEventListener('submit', async (e) => {
             body: JSON.stringify({ username, password })
         });
         if (res) {
-            showToast(`Account created! Auto-funded with ৳${formatIntegerAmount(res.wallet_balance_bdt)} BDT.`, 'success');
+            showToast(`Account created! Auto-funded with ৳${res.wallet_balance_bdt} BDT.`, 'success');
             const loginRes = await apiCall('/auth/login', {
                 method: 'POST',
                 body: JSON.stringify({ username, password })
@@ -296,7 +281,7 @@ async function refreshBalance() {
     try {
         const res = await apiCall('/wallets/me', {}, true);
         if (res && res.balance_bdt) {
-            const formatted = formatIntegerAmount(res.balance_bdt);
+            const formatted = res.balance_bdt;
             dashBalance.textContent = `৳ ${formatted}`;
             return res.balance_bdt;
         }
@@ -313,7 +298,7 @@ formSend.addEventListener('submit', async (e) => {
     e.preventDefault();
     const recipient = document.getElementById('send-recipient').value.trim();
     const rawAmount = document.getElementById('send-amount').value;
-    const integerAmount = parsePositiveInteger(rawAmount);
+    const amount = rawAmount;
     const note = document.getElementById('send-note').value.trim() || null;
 
     if (!recipient) {
@@ -321,8 +306,8 @@ formSend.addEventListener('submit', async (e) => {
         return;
     }
 
-    if (!integerAmount) {
-        showToast('Amount must be a whole positive integer (e.g. 2500, no decimals).', 'error');
+    if (!amount) {
+        showToast('Amount must be valid (e.g. 2500 or 2500.00).', 'error');
         return;
     }
 
@@ -339,13 +324,13 @@ formSend.addEventListener('submit', async (e) => {
             },
             body: JSON.stringify({
                 recipient_username: recipient,
-                amount_bdt: integerAmount,
+                amount_bdt: amount,
                 note
             })
         });
 
         if (res) {
-            showToast(`Sent ৳${formatIntegerAmount(res.amount_bdt)} BDT to ${res.recipient}!`, 'success');
+            showToast(`Sent ৳${res.amount_bdt} BDT to ${res.recipient}!`, 'success');
             formSend.reset();
             triggerNewInboxNotification();
             await loadDashboardData();
@@ -362,7 +347,7 @@ formRequest.addEventListener('submit', async (e) => {
     e.preventDefault();
     const payer = document.getElementById('req-payer').value.trim();
     const rawAmount = document.getElementById('req-amount').value;
-    const integerAmount = parsePositiveInteger(rawAmount);
+    const amount = rawAmount;
     const note = document.getElementById('req-note').value.trim() || null;
 
     if (!payer) {
@@ -370,8 +355,8 @@ formRequest.addEventListener('submit', async (e) => {
         return;
     }
 
-    if (!integerAmount) {
-        showToast('Amount must be a whole positive integer (e.g. 1200, no decimals).', 'error');
+    if (!amount) {
+        showToast('Amount must be valid (e.g. 1200 or 1200.00).', 'error');
         return;
     }
 
@@ -383,13 +368,13 @@ formRequest.addEventListener('submit', async (e) => {
             method: 'POST',
             body: JSON.stringify({
                 payer_username: payer,
-                amount_bdt: integerAmount,
+                amount_bdt: amount,
                 note
             })
         });
 
         if (res) {
-            showToast(`Requested ৳${formatIntegerAmount(res.amount_bdt)} BDT from ${res.payer}!`, 'success');
+            showToast(`Requested ৳${res.amount_bdt} BDT from ${res.payer}!`, 'success');
             formRequest.reset();
             await refreshRequests();
             // Automatically switch to Sent Requests tab so the user sees it
@@ -421,7 +406,7 @@ async function refreshRequests() {
                         <div class="flex items-center space-x-1.5">
                             <span class="text-xs font-bold text-white">${escapeHtml(r.requester_username)}</span>
                             <span class="text-[10px] text-[#71717a]">asks for</span>
-                            <span class="text-xs font-mono font-bold text-accent-400">৳${formatIntegerAmount(r.amount_bdt)}</span>
+                            <span class="text-xs font-mono font-bold text-accent-400">৳${r.amount_bdt}</span>
                         </div>
                         ${r.note ? `<p class="text-[10px] text-[#a1a1aa] mt-0.5">"${escapeHtml(r.note)}"</p>` : ''}
                         <span class="text-[10px] text-[#71717a] block mt-1">${formatTime(r.created_at)}</span>
@@ -459,7 +444,7 @@ async function refreshRequests() {
                         <div>
                             <div class="flex items-center space-x-1.5">
                                 <span class="text-xs font-bold text-white">To: ${escapeHtml(r.payer_username)}</span>
-                                <span class="text-xs font-mono font-bold text-[#d4d4d8]">৳${formatIntegerAmount(r.amount_bdt)}</span>
+                                <span class="text-xs font-mono font-bold text-[#d4d4d8]">৳${r.amount_bdt}</span>
                             </div>
                             ${r.note ? `<p class="text-[10px] text-[#a1a1aa] mt-0.5">"${escapeHtml(r.note)}"</p>` : ''}
                             <span class="text-[10px] text-[#71717a] block mt-1">${formatTime(r.created_at)}</span>
@@ -632,17 +617,17 @@ function renderInboxDrawer() {
                 <div class="flex items-center justify-between">
                     <div class="flex items-center space-x-2">
                         ${typeBadge}
-                        <span class="text-[10px] text-[#71717a]">TXN #${entry.transaction_id}</span>
+                        <span class="text-[10px] text-[#71717a]"><span class="txn-code">${entry.trx_code}</span></span>
                     </div>
                     <span class="text-xs font-bold font-mono ${amountColor}">
-                        ${amountSign} ৳${formatIntegerAmount(entry.amount_bdt)}
+                        ${amountSign} ৳${entry.amount_bdt}
                     </span>
                 </div>
 
                 <div class="flex items-center justify-between text-[10px] text-[#71717a] pt-1 border-t border-[#1a1e24]">
                     <div>
                         <span>Balance:</span>
-                        <span class="text-[#d4d4d8] font-mono font-medium">৳${formatIntegerAmount(entry.balance_after)}</span>
+                        <span class="text-[#d4d4d8] font-mono font-medium">৳${entry.balance_after}</span>
                     </div>
                     <span class="font-sans">${formatTime(entry.created_at)}</span>
                 </div>
@@ -696,4 +681,128 @@ if (authToken && currentUsername) {
     setAuthState(authToken, currentUsername);
 } else {
     setAuthState(null, null);
+}
+
+// ── Escrow Logic ───────────────────────────────────────────────────────────
+window.handleEscrowRelease = async function(trxCode) {
+    try {
+        const res = await apiCall(`/escrow/payments/${trxCode}/release`, { method: 'POST' });
+        if (res) { showToast('Escrow released successfully', 'success'); loadDashboardData(); }
+    } catch (e) {}
+};
+window.handleEscrowCancel = async function(trxCode) {
+    try {
+        const res = await apiCall(`/escrow/payments/${trxCode}/cancel`, { method: 'POST' });
+        if (res) { showToast('Escrow cancelled', 'info'); loadDashboardData(); }
+    } catch (e) {}
+};
+
+document.getElementById('form-escrow-hold')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const recipient = document.getElementById('escrow-recipient').value.trim();
+    const rawAmount = document.getElementById('escrow-amount').value;
+    const note = document.getElementById('escrow-note').value.trim() || null;
+    const idempotencyKey = typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : `idemp-${Date.now()}`;
+    
+    try {
+        const res = await apiCall('/escrow/payments', {
+            method: 'POST',
+            headers: { 'Idempotency-Key': idempotencyKey },
+            body: JSON.stringify({ seller_username: recipient, amount_bdt: rawAmount, item_description: note })
+        });
+        if (res) {
+            showToast('Escrow created successfully', 'success');
+            document.getElementById('form-escrow-hold').reset();
+            loadDashboardData();
+        }
+    } catch (e) {}
+});
+
+async function refreshEscrow() {
+    const container = document.getElementById('container-escrow-list');
+    if (!container) return;
+    try {
+        const res = await apiCall('/escrow/payments', {}, true);
+        if (!res) return;
+        if (res.length === 0) {
+            container.innerHTML = `<div class="text-center py-8 text-[#71717a] text-xs">No escrows found.</div>`;
+            return;
+        }
+        container.innerHTML = res.map(e => `
+            <div class="p-3 rounded-2xl bg-[#0c0e11] border border-[#242830] flex items-center justify-between space-x-3 fade-in">
+                <div>
+                    <div class="text-xs font-bold text-white">${escapeHtml(e.trx_code)} - ৳${e.amount_bdt}</div>
+                    <div class="text-[10px] text-[#71717a]">Buyer: ${escapeHtml(e.buyer)}, Seller: ${escapeHtml(e.seller)}</div>
+                    <div class="text-[10px] text-[#71717a]">Status: ${e.status}</div>
+                </div>
+                <div class="flex flex-col space-y-1">
+                    ${e.status === 'HELD' && e.buyer === currentUsername ? `<button onclick="handleEscrowRelease('${e.trx_code}')" class="px-2 py-1 bg-accent-500 text-stone-950 rounded text-xs font-bold">Release</button>` : ''}
+                    ${e.status === 'HELD' && e.buyer === currentUsername ? `<button onclick="handleEscrowCancel('${e.trx_code}')" class="px-2 py-1 bg-rose-500 text-white rounded text-xs font-bold">Cancel</button>` : ''}
+                </div>
+            </div>
+        `).join('');
+    } catch(e) {}
+}
+
+const origLoadDash = loadDashboardData;
+loadDashboardData = async function() {
+    await origLoadDash();
+    refreshEscrow();
+    refreshScaling();
+};
+
+const origStartPoll = startPolling;
+startPolling = function() {
+    origStartPoll();
+    const oldInt = pollInterval;
+    clearInterval(pollInterval);
+    pollInterval = setInterval(async () => {
+        if (authToken) {
+            await Promise.all([ refreshBalance(), refreshRequests(), refreshLedgerHistory(true), refreshEscrow(), refreshScaling() ]);
+        }
+    }, 3500);
+}
+
+// ── Scaling Metrics ────────────────────────────────────────────────────────
+async function refreshScaling() {
+    const el = document.getElementById('scaling-metrics-content');
+    if (!el) return;
+    try {
+        const res = await apiCall('/scaling/metrics', {}, true);
+        if (res) {
+            el.innerHTML = `
+                <div>Connections: ${res.database_connections.active}/${res.database_connections.max} (${res.database_connections.utilization_percent})</div>
+                <div>Status: ${res.scaling_plan.next_scaling_step}</div>
+            `;
+        }
+    } catch (e) {}
+}
+
+// ── Concurrency Arena ──────────────────────────────────────────────────────
+document.getElementById('btn-arena-run')?.addEventListener('click', async () => {
+    const resultsEl = document.getElementById('arena-results');
+    resultsEl.innerHTML = "Firing requests...";
+    const reqs = [];
+    for (let i = 0; i < 10; i++) {
+        const idempotencyKey = crypto.randomUUID();
+        reqs.push(apiCall('/transfers/send', {
+            method: 'POST',
+            headers: { 'Idempotency-Key': idempotencyKey },
+            body: JSON.stringify({ recipient_username: 'ESCROW_HOLD', amount_bdt: "1.00", note: "arena" })
+        }, true).catch(e => null));
+    }
+    const results = await Promise.all(reqs);
+    const success = results.filter(r => r !== null).length;
+    resultsEl.innerHTML = `Sent 10 requests. Success: ${success}. Expected: -৳${success}. Check balance.`;
+    loadDashboardData();
+});
+
+// Add copy button to trx_code
+const origRenderInbox = renderInboxDrawer;
+renderInboxDrawer = function() {
+    origRenderInbox();
+    const container = document.getElementById('inbox-items-container');
+    container.querySelectorAll('.txn-code').forEach(el => {
+        el.innerHTML = `${el.innerText} <button class="ml-2 text-accent-500 hover:text-white" onclick="navigator.clipboard.writeText('${el.innerText}')">[Copy]</button>`;
+    });
 }

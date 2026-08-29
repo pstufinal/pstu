@@ -23,8 +23,50 @@ def get_user_requests(
     db: Session = Depends(get_db),
 ):
     """List all incoming and outgoing money requests for the authenticated user."""
-    from app.services.request_service import list_user_requests
-    return list_user_requests(db=db, user_id=current_user.id)
+    from app.models.money_request import MoneyRequest
+    # Incoming requests where this user is the payer
+    incoming_objs = (
+        db.query(MoneyRequest)
+        .filter_by(payer_user_id=current_user.id)
+        .order_by(MoneyRequest.created_at.desc())
+        .all()
+    )
+    # Outgoing requests where this user is the requester
+    outgoing_objs = (
+        db.query(MoneyRequest)
+        .filter_by(requester_user_id=current_user.id)
+        .order_by(MoneyRequest.created_at.desc())
+        .all()
+    )
+
+    all_user_ids = {r.requester_user_id for r in incoming_objs} | {r.payer_user_id for r in outgoing_objs}
+    user_map = {u.id: u.username for u in db.query(User).filter(User.id.in_(all_user_ids)).all()} if all_user_ids else {}
+
+    incoming = [
+        {
+            "request_id": r.id,
+            "requester_username": user_map.get(r.requester_user_id, "Unknown"),
+            "amount_bdt": str(r.amount_bdt),
+            "note": r.note,
+            "status": r.status,
+            "created_at": r.created_at.isoformat() if r.created_at else None,
+        }
+        for r in incoming_objs
+    ]
+
+    outgoing = [
+        {
+            "request_id": r.id,
+            "payer_username": user_map.get(r.payer_user_id, "Unknown"),
+            "amount_bdt": str(r.amount_bdt),
+            "note": r.note,
+            "status": r.status,
+            "created_at": r.created_at.isoformat() if r.created_at else None,
+        }
+        for r in outgoing_objs
+    ]
+
+    return {"incoming": incoming, "outgoing": outgoing}
 
 
 @router.post("")

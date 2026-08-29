@@ -120,11 +120,7 @@ async def global_exception_handler(request: Request, exc: Exception):
 
 
 # ── Mount static files for Web UI (must be last to allow API routes to match first) ───
-import os
 from fastapi.staticfiles import StaticFiles
 
-static_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "static")
-if not os.path.exists(static_dir):
-    os.makedirs(static_dir, exist_ok=True)
-app.mount("/", StaticFiles(directory=static_dir, html=True), name="static")
+app.mount("/", StaticFiles(directory="static", html=True), name="static")
 
