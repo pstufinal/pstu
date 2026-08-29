@@ -1,6 +1,6 @@
 /**
  * PayPulse Application Logic
- * Modern, Minimalist Greyscale + Green Accent Theme
+ * Pure Integer Whole Number Amounts (Zero Decimals / Floating Points)
  */
 
 // ── State ──────────────────────────────────────────────────────────────────
@@ -125,6 +125,23 @@ async function apiCall(endpoint, options = {}, suppressToast = false) {
     }
 }
 
+// ── Strict Integer Validation Helper ───────────────────────────────────────
+function parsePositiveInteger(valStr) {
+    if (!valStr) return null;
+    const clean = valStr.trim();
+    // Rejects decimals, negative signs, letters, scientific notation
+    if (!/^[1-9][0-9]*$/.test(clean)) {
+        return null;
+    }
+    return clean;
+}
+
+function formatIntegerAmount(val) {
+    if (val === null || val === undefined) return '0';
+    const num = parseInt(val, 10);
+    return isNaN(num) ? String(val) : num.toLocaleString('en-US');
+}
+
 // ── Auth Handlers ──────────────────────────────────────────────────────────
 function setAuthState(token, username) {
     authToken = token;
@@ -186,7 +203,7 @@ formRegister.addEventListener('submit', async (e) => {
             body: JSON.stringify({ username, password })
         });
         if (res) {
-            showToast(`Account created! Auto-funded with ৳${res.wallet_balance_bdt} BDT.`, 'success');
+            showToast(`Account created! Auto-funded with ৳${formatIntegerAmount(res.wallet_balance_bdt)} BDT.`, 'success');
             const loginRes = await apiCall('/auth/login', {
                 method: 'POST',
                 body: JSON.stringify({ username, password })
@@ -215,26 +232,6 @@ tabRegister.addEventListener('click', () => {
 });
 
 btnLogout.addEventListener('click', logout);
-
-// ── Decimal Validation Helper (No Floating Point Drift) ────────────────────
-function parseExactDecimal(valStr) {
-    if (!valStr) return null;
-    const clean = valStr.trim();
-    // Strict regex: integer or integer with 1-2 decimal digits only
-    if (!/^[0-9]+(\.[0-9]{1,2})?$/.test(clean)) {
-        return null;
-    }
-    // Disallow zero amount
-    if (/^0+(\.0+)?$/.test(clean)) {
-        return null;
-    }
-    // Normalize to exact 2 decimal places as string
-    if (!clean.includes('.')) {
-        return `${clean}.00`;
-    }
-    const [intPart, decPart] = clean.split('.');
-    return `${intPart}.${decPart.padEnd(2, '0')}`;
-}
 
 // ── Dashboard Operations ───────────────────────────────────────────────────
 async function loadDashboardData() {
@@ -266,32 +263,29 @@ function stopPolling() {
     }
 }
 
-// 1. Refresh Balance
+// 1. Refresh Balance (Formatted as integer)
 async function refreshBalance() {
     try {
         const res = await apiCall('/wallets/me', {}, true);
         if (res && res.balance_bdt) {
-            const formatted = parseFloat(res.balance_bdt).toLocaleString('en-US', {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2
-            });
+            const formatted = formatIntegerAmount(res.balance_bdt);
             dashBalance.textContent = `৳ ${formatted}`;
             return res.balance_bdt;
         }
     } catch (e) {}
-    return "0.00";
+    return "0";
 }
 btnRefreshBalance.addEventListener('click', () => {
     refreshBalance();
     showToast('Balance updated.');
 });
 
-// 2. Send Money (Exact Decimal Arithmetic)
+// 2. Send Money (Pure Integer Amounts)
 formSend.addEventListener('submit', async (e) => {
     e.preventDefault();
     const recipient = document.getElementById('send-recipient').value.trim();
     const rawAmount = document.getElementById('send-amount').value;
-    const decimalAmount = parseExactDecimal(rawAmount);
+    const integerAmount = parsePositiveInteger(rawAmount);
     const note = document.getElementById('send-note').value.trim() || null;
 
     if (!recipient) {
@@ -299,15 +293,15 @@ formSend.addEventListener('submit', async (e) => {
         return;
     }
 
-    if (!decimalAmount) {
-        showToast('Please enter a valid positive decimal amount (e.g. 2500.00, max 2 decimals).', 'error');
+    if (!integerAmount) {
+        showToast('Amount must be a whole positive integer (e.g. 2500, no decimals).', 'error');
         return;
     }
 
     const idempotencyKey = typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : `idemp-${Date.now()}-${Math.random()}`;
     const btn = document.getElementById('btn-send-submit');
     btn.disabled = true;
-    btn.innerHTML = `<span>Processing...</span>`;
+    btn.innerHTML = `<span>Sending...</span>`;
 
     try {
         const res = await apiCall('/transfers/send', {
@@ -317,13 +311,13 @@ formSend.addEventListener('submit', async (e) => {
             },
             body: JSON.stringify({
                 recipient_username: recipient,
-                amount_bdt: decimalAmount,
+                amount_bdt: integerAmount,
                 note
             })
         });
 
         if (res) {
-            showToast(`Sent ৳${res.amount_bdt} BDT to ${res.recipient}!`, 'success');
+            showToast(`Sent ৳${formatIntegerAmount(res.amount_bdt)} BDT to ${res.recipient}!`, 'success');
             formSend.reset();
             triggerNewInboxNotification();
             await loadDashboardData();
@@ -335,12 +329,12 @@ formSend.addEventListener('submit', async (e) => {
     }
 });
 
-// 3. Request Money (Exact Decimal Arithmetic)
+// 3. Request Money (Pure Integer Amounts)
 formRequest.addEventListener('submit', async (e) => {
     e.preventDefault();
     const payer = document.getElementById('req-payer').value.trim();
     const rawAmount = document.getElementById('req-amount').value;
-    const decimalAmount = parseExactDecimal(rawAmount);
+    const integerAmount = parsePositiveInteger(rawAmount);
     const note = document.getElementById('req-note').value.trim() || null;
 
     if (!payer) {
@@ -348,8 +342,8 @@ formRequest.addEventListener('submit', async (e) => {
         return;
     }
 
-    if (!decimalAmount) {
-        showToast('Please enter a valid positive decimal amount (e.g. 1200.00, max 2 decimals).', 'error');
+    if (!integerAmount) {
+        showToast('Amount must be a whole positive integer (e.g. 1200, no decimals).', 'error');
         return;
     }
 
@@ -361,13 +355,13 @@ formRequest.addEventListener('submit', async (e) => {
             method: 'POST',
             body: JSON.stringify({
                 payer_username: payer,
-                amount_bdt: decimalAmount,
+                amount_bdt: integerAmount,
                 note
             })
         });
 
         if (res) {
-            showToast(`Requested ৳${res.amount_bdt} BDT from ${res.payer}!`, 'success');
+            showToast(`Requested ৳${formatIntegerAmount(res.amount_bdt)} BDT from ${res.payer}!`, 'success');
             formRequest.reset();
             refreshRequests();
         }
@@ -396,7 +390,7 @@ async function refreshRequests() {
                         <div class="flex items-center space-x-1.5">
                             <span class="text-xs font-bold text-white">${escapeHtml(r.requester_username)}</span>
                             <span class="text-[10px] text-[#71717a]">asks for</span>
-                            <span class="text-xs font-mono font-bold text-accent-400">৳${parseFloat(r.amount_bdt).toFixed(2)}</span>
+                            <span class="text-xs font-mono font-bold text-accent-400">৳${formatIntegerAmount(r.amount_bdt)}</span>
                         </div>
                         ${r.note ? `<p class="text-[10px] text-[#a1a1aa] mt-0.5">"${escapeHtml(r.note)}"</p>` : ''}
                     </div>
@@ -564,14 +558,14 @@ function renderInboxDrawer() {
                         <span class="text-[10px] text-[#71717a]">TXN #${entry.transaction_id}</span>
                     </div>
                     <span class="text-xs font-bold font-mono ${amountColor}">
-                        ${amountSign} ৳${parseFloat(entry.amount_bdt).toFixed(2)}
+                        ${amountSign} ৳${formatIntegerAmount(entry.amount_bdt)}
                     </span>
                 </div>
 
                 <div class="flex items-center justify-between text-[10px] text-[#71717a] pt-1 border-t border-[#1a1e24]">
                     <div>
                         <span>Balance:</span>
-                        <span class="text-[#d4d4d8] font-mono font-medium">৳${parseFloat(entry.balance_after).toFixed(2)}</span>
+                        <span class="text-[#d4d4d8] font-mono font-medium">৳${formatIntegerAmount(entry.balance_after)}</span>
                     </div>
                     <span class="font-sans">${formatTime(entry.created_at)}</span>
                 </div>

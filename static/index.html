@@ -142,7 +142,7 @@
                 <!-- Form Register -->
                 <form id="form-register" class="space-y-4 hidden">
                     <div class="p-3 rounded-xl bg-accent-500/10 border border-accent-500/20 text-xs text-accent-300">
-                        New accounts are auto-credited with <strong>৳100,000.00 BDT</strong>.
+                        New accounts are auto-credited with <strong>৳100,000 BDT</strong>.
                     </div>
                     <div>
                         <label class="block text-xs font-medium text-[#a1a1aa] mb-1.5">Desired Username</label>
@@ -180,7 +180,7 @@
                 </div>
 
                 <div class="flex items-baseline space-x-2.5">
-                    <span class="text-4xl sm:text-5xl font-extrabold font-mono text-white tracking-tight" id="dash-balance">৳ 0.00</span>
+                    <span class="text-4xl sm:text-5xl font-extrabold font-mono text-white tracking-tight" id="dash-balance">৳ 0</span>
                     <span class="text-xs font-semibold px-2 py-0.5 rounded-md bg-accent-500/15 text-accent-400 border border-accent-500/20">BDT</span>
                 </div>
             </div>
@@ -208,7 +208,7 @@
                                 <label class="block text-xs font-medium text-[#a1a1aa] mb-1">Amount (BDT)</label>
                                 <div class="relative">
                                     <span class="absolute left-3.5 top-2 text-[#71717a] font-mono text-sm">৳</span>
-                                    <input type="text" inputmode="decimal" id="send-amount" required placeholder="0.00"
+                                    <input type="text" inputmode="numeric" pattern="[0-9]*" id="send-amount" required placeholder="2500"
                                         class="w-full bg-[#0c0e11] border border-[#262b33] rounded-xl pl-8 pr-3.5 py-2 text-sm text-white placeholder-[#52525b] focus:outline-none focus:border-accent-500 font-mono transition">
                                 </div>
                             </div>
@@ -259,7 +259,7 @@
                                     <label class="block text-xs font-medium text-[#a1a1aa] mb-1">Amount to Collect (BDT)</label>
                                     <div class="relative">
                                         <span class="absolute left-3.5 top-2 text-[#71717a] font-mono text-sm">৳</span>
-                                        <input type="text" inputmode="decimal" id="req-amount" required placeholder="0.00"
+                                        <input type="text" inputmode="numeric" pattern="[0-9]*" id="req-amount" required placeholder="1200"
                                             class="w-full bg-[#0c0e11] border border-[#262b33] rounded-xl pl-8 pr-3.5 py-2 text-sm text-white placeholder-[#52525b] focus:outline-none focus:border-accent-500 font-mono transition">
                                     </div>
                                 </div>
