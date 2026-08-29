@@ -55,33 +55,57 @@ const filterAll = document.getElementById('filter-all');
 const filterDebits = document.getElementById('filter-debits');
 const filterCredits = document.getElementById('filter-credits');
 
-// ── Toast Notifications ────────────────────────────────────────────────────
-function showToast(message, type = 'info') {
+// ── Realistic Top-Right Toast Notifications ─────────────────────────────────
+function showToast(message, type = 'info', title = null) {
     const container = document.getElementById('toast-container');
     const toast = document.createElement('div');
     
-    let bgClass = 'bg-[#1a1e24] border-[#2b303b] text-white';
-    let icon = '•';
+    let defaultTitle = 'Notification';
+    let iconBg = 'bg-[#262b35] text-[#d4d4d8] border border-[#373e4d]';
+    let iconSvg = `<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`;
+    
     if (type === 'success') {
-        bgClass = 'bg-[#0f291e] border-accent-500/40 text-accent-300';
-        icon = '✓';
+        defaultTitle = 'Success';
+        iconBg = 'bg-accent-500/15 text-accent-400 border border-accent-500/25';
+        iconSvg = `<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>`;
     } else if (type === 'error') {
-        bgClass = 'bg-[#291114] border-rose-500/40 text-rose-300';
-        icon = '✕';
+        defaultTitle = 'Attention';
+        iconBg = 'bg-rose-500/15 text-rose-400 border border-rose-500/25';
+        iconSvg = `<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>`;
     }
 
-    toast.className = `p-3.5 rounded-2xl border shadow-xl flex items-center space-x-2.5 pointer-events-auto fade-in text-xs ${bgClass}`;
+    const toastTitle = title || defaultTitle;
+
+    toast.className = 'toast-item p-3.5 rounded-2xl bg-[#16191f]/95 border border-[#2b303b] shadow-2xl shadow-black/80 flex items-start space-x-3 pointer-events-auto backdrop-blur-md animate-slide-in-right text-xs transition-all';
     toast.innerHTML = `
-        <span class="font-bold text-sm shrink-0">${icon}</span>
-        <div class="font-medium">${escapeHtml(message)}</div>
+        <div class="w-7 h-7 rounded-xl flex items-center justify-center shrink-0 mt-0.5 ${iconBg}">
+            ${iconSvg}
+        </div>
+        <div class="flex-1 min-w-0 pr-1">
+            <div class="font-bold text-white tracking-tight text-xs">${toastTitle}</div>
+            <div class="text-[11px] text-[#a1a1aa] leading-relaxed mt-0.5">${escapeHtml(message)}</div>
+        </div>
+        <button class="btn-dismiss-toast text-[#71717a] hover:text-[#d4d4d8] p-1 rounded-md transition shrink-0">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
     `;
+
+    toast.querySelector('.btn-dismiss-toast').addEventListener('click', () => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateX(20px)';
+        toast.style.transition = 'all 0.2s ease';
+        setTimeout(() => toast.remove(), 200);
+    });
 
     container.appendChild(toast);
     setTimeout(() => {
-        toast.style.opacity = '0';
-        toast.style.transition = 'opacity 0.25s ease';
-        setTimeout(() => toast.remove(), 250);
-    }, 3500);
+        if (toast.parentElement) {
+            toast.style.opacity = '0';
+            toast.style.transform = 'translateX(20px)';
+            toast.style.transition = 'all 0.2s ease';
+            setTimeout(() => toast.remove(), 200);
+        }
+    }, 4000);
 }
 
 // ── API Helper ─────────────────────────────────────────────────────────────
